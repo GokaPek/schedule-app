@@ -1,19 +1,21 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:8280';
+const BASE_URL = 'http://localhost:8080';
 
-export const apiClient = axios.create({
+// Создаем единый экземпляр axios с настройками
+const apiClient = axios.create({
   baseURL: BASE_URL,
+  withCredentials: true, // Важно для CORS и кук
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 // Функции для работы с Classroom
-export const createClassroom = (classroom) => apiClient.post('/api/classrooms', classroom);
-export const getClassroomById = (id) => apiClient.get(`/api/classrooms/${id}`);
+export const getClassroomById = (id) => apiClient.get(`/classrooms/${id}`);
+export const createClassroom = (classroom) => apiClient.post('/classrooms', classroom);
 
 // Функции для работы с Schedule
-export const createSchedule = (schedule) => apiClient.post('/api/schedules', schedule);
-export const updateSchedule = (id, schedule) => apiClient.put(`/api/schedules/${id}`, schedule);
-export const deleteSchedule = (id) => apiClient.delete(`/api/schedules/${id}`);
+export const createSchedule = (schedule) => apiClient.post('/schedules', schedule);
+export const updateSchedule = (id, schedule) => apiClient.put(`/schedules/${id}`, schedule);
+export const deleteSchedule = (id) => apiClient.delete(`/schedules/${id}`);
