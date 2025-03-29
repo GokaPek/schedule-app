@@ -14,6 +14,7 @@ const apiClient = axios.create({
 // Функции для работы с Classroom
 export const getClassroomById = (id) => apiClient.get(`/classrooms/${id}`);
 export const createClassroom = (classroom) => apiClient.post('/classrooms', classroom);
+export const getAllClassrooms = (page = 0, size = 10) => apiClient.get('/classrooms', { params: { page, size } });
 
 // Функции для работы с Schedule
 export const createSchedule = (schedule) => apiClient.post('/schedules', schedule);

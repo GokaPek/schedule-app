@@ -1,20 +1,46 @@
-import React, { useState } from 'react';
-import { createClassroom, getClassroomById } from '../api/apiClient';
+import React, { useState, useEffect } from 'react';
+import { createClassroom, getClassroomById, getAllClassrooms } from '../api/apiClient';
 
 const ClassroomPage = () => {
+  // Состояние для формы создания аудитории
   const [classroom, setClassroom] = useState({ name: '', type: '' });
+
+  // Состояние для получения аудитории по ID
   const [classroomId, setClassroomId] = useState('');
   const [fetchedClassroom, setFetchedClassroom] = useState(null);
 
+  // Состояние для списка аудиторий
+  const [classrooms, setClassrooms] = useState([]);
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(5); // Количество аудиторий на странице
+  const [totalPages, setTotalPages] = useState(0);
+
+  // Загрузка списка аудиторий
+  useEffect(() => {
+    const fetchClassrooms = async () => {
+      try {
+        const response = await getAllClassrooms(page, size);
+        setClassrooms(response.data.content);
+        setTotalPages(response.data.totalPages);
+      } catch (error) {
+        console.error('Ошибка при получении аудиторий:', error);
+      }
+    };
+    fetchClassrooms();
+  }, [page, size]);
+
+  // Создание новой аудитории
   const handleCreateClassroom = async () => {
     try {
       await createClassroom(classroom);
       alert('Аудитория успешно создана!');
+      setClassroom({ name: '', type: '' }); // Очистка формы
     } catch (error) {
       console.error('Ошибка при создании аудитории:', error);
     }
   };
 
+  // Получение аудитории по ID
   const handleGetClassroom = async () => {
     try {
       const response = await getClassroomById(classroomId);
@@ -64,6 +90,29 @@ const ClassroomPage = () => {
             <p>Тип: {fetchedClassroom.type}</p>
           </div>
         )}
+      </div>
+
+      {/* Список аудиторий */}
+      <div>
+        <h3>Список аудиторий</h3>
+        <ul>
+          {classrooms.map((classroom) => (
+            <li key={classroom.id}>
+              {classroom.name} ({classroom.type})
+            </li>
+          ))}
+        </ul>
+
+        {/* Пагинация */}
+        <div>
+          <button onClick={() => setPage((prev) => Math.max(prev - 1, 0))} disabled={page === 0}>
+            Назад
+          </button>
+          <span>Страница {page + 1} из {totalPages}</span>
+          <button onClick={() => setPage((prev) => prev + 1)} disabled={page + 1 >= totalPages}>
+            Вперед
+          </button>
+        </div>
       </div>
     </div>
   );
