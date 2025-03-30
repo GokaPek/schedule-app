@@ -20,3 +20,5 @@ export const getAllClassrooms = (page = 0, size = 10) => apiClient.get('/classro
 export const createSchedule = (schedule) => apiClient.post('/schedules', schedule);
 export const updateSchedule = (id, schedule) => apiClient.put(`/schedules/${id}`, schedule);
 export const deleteSchedule = (id) => apiClient.delete(`/schedules/${id}`);
+export const getScheduleByGroupId = (groupId) => apiClient.get(`/schedules/group/${groupId}`);
+export const getScheduleByTeacherId = (teacherId) => apiClient.get(`/schedules/teacher/${teacherId}`);
