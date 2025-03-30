@@ -22,3 +22,9 @@ export const updateSchedule = (id, schedule) => apiClient.put(`/schedules/${id}`
 export const deleteSchedule = (id) => apiClient.delete(`/schedules/${id}`);
 export const getScheduleByGroupId = (groupId) => apiClient.get(`/schedules/group/${groupId}`);
 export const getScheduleByTeacherId = (teacherId) => apiClient.get(`/schedules/teacher/${teacherId}`);
+
+// Функции для работы с группами
+export const getAllGroups = () => apiClient.get('/groups');
+
+// Функции для работы с преподавателями
+export const getAllTeachers = () => apiClient.get('/teachers');

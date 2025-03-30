@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   createSchedule,
   updateSchedule,
   deleteSchedule,
   getScheduleByGroupId,
   getScheduleByTeacherId,
+  getAllGroups,
+  getAllTeachers,
 } from '../api/apiClient';
 
 const SchedulePage = () => {
@@ -23,8 +25,30 @@ const SchedulePage = () => {
 
   // Состояние для отображения расписания
   const [fetchedSchedule, setFetchedSchedule] = useState([]);
-  const [selectedGroupId, setSelectedGroupId] = useState('');
-  const [selectedTeacherId, setSelectedTeacherId] = useState('');
+
+  // Состояние для списков преподавателей и групп
+  const [groups, setGroups] = useState([]);
+  const [teachers, setTeachers] = useState([]);
+
+  // Состояние для выбранных значений
+  const [selectedGroup, setSelectedGroup] = useState('');
+  const [selectedTeacher, setSelectedTeacher] = useState('');
+
+  // Загрузка списков преподавателей и групп при монтировании компонента
+  useEffect(() => {
+    const fetchGroupsAndTeachers = async () => {
+      try {
+        const groupsResponse = await getAllGroups();
+        setGroups(groupsResponse.data);
+
+        const teachersResponse = await getAllTeachers();
+        setTeachers(teachersResponse.data);
+      } catch (error) {
+        console.error('Ошибка при загрузке групп и преподавателей:', error);
+      }
+    };
+    fetchGroupsAndTeachers();
+  }, []);
 
   // Создание расписания
   const handleCreateSchedule = async () => {
@@ -59,6 +83,11 @@ const SchedulePage = () => {
   // Получение расписания по ID группы
   const handleGetScheduleByGroupId = async () => {
     try {
+      const selectedGroupId = groups.find((group) => group.name === selectedGroup)?.id;
+      if (!selectedGroupId) {
+        alert('Выберите группу из списка.');
+        return;
+      }
       const response = await getScheduleByGroupId(selectedGroupId);
       setFetchedSchedule(response.data);
     } catch (error) {
@@ -69,6 +98,11 @@ const SchedulePage = () => {
   // Получение расписания по ID преподавателя
   const handleGetScheduleByTeacherId = async () => {
     try {
+      const selectedTeacherId = teachers.find((teacher) => teacher.lastName === selectedTeacher)?.id;
+      if (!selectedTeacherId) {
+        alert('Выберите преподавателя из списка.');
+        return;
+      }
       const response = await getScheduleByTeacherId(selectedTeacherId);
       setFetchedSchedule(response.data);
     } catch (error) {
@@ -150,27 +184,39 @@ const SchedulePage = () => {
         <button onClick={handleDeleteSchedule}>Удалить</button>
       </div>
 
-      {/* Форма получения расписания */}
+      {/* Выбор группы или преподавателя */}
       <div>
         <h3>Получить расписание</h3>
         <div>
-          <input
-            type="number"
-            placeholder="ID группы"
-            value={selectedGroupId}
-            onChange={(e) => setSelectedGroupId(e.target.value)}
-          />
+          <label>Выберите группу:</label>
+          <select
+            value={selectedGroup}
+            onChange={(e) => setSelectedGroup(e.target.value)}
+          >
+            <option value="">-- Выберите группу --</option>
+            {groups.map((group) => (
+              <option key={group.id} value={group.name}>
+                {group.name}
+              </option>
+            ))}
+          </select>
           <button onClick={handleGetScheduleByGroupId}>
             Получить по группе
           </button>
         </div>
         <div>
-          <input
-            type="number"
-            placeholder="ID преподавателя"
-            value={selectedTeacherId}
-            onChange={(e) => setSelectedTeacherId(e.target.value)}
-          />
+          <label>Выберите преподавателя:</label>
+          <select
+            value={selectedTeacher}
+            onChange={(e) => setSelectedTeacher(e.target.value)}
+          >
+            <option value="">-- Выберите преподавателя --</option>
+            {teachers.map((teacher) => (
+              <option key={teacher.id} value={teacher.lastName}>
+                {teacher.lastName}
+              </option>
+            ))}
+          </select>
           <button onClick={handleGetScheduleByTeacherId}>
             Получить по преподавателю
           </button>
