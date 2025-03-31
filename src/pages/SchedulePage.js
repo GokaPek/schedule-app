@@ -7,16 +7,17 @@ import {
   getScheduleByTeacherId,
   getAllGroups,
   getAllTeachers,
-  getAllDisciplines, // Новый метод для получения дисциплин
+  getAllDisciplines,
   downloadSchedulePdf,
+  getAllClassrooms,
 } from '../api/apiClient';
 
 const SchedulePage = () => {
   // Состояние для формы создания/обновления расписания
   const [schedule, setSchedule] = useState({
-    pairNumber: 1,
-    weekNumber: 1,
-    dayOfWeek: 'MONDAY',
+    pairNumber: 1, // Номер пары (по умолчанию 1)
+    weekNumber: 1, // Номер недели (по умолчанию 1)
+    dayOfWeek: 'MONDAY', // День недели (по умолчанию MONDAY)
     classroomId: null,
     teacherId: null,
     groupIds: [],
@@ -32,11 +33,17 @@ const SchedulePage = () => {
   // Состояние для списков преподавателей, групп и дисциплин
   const [groups, setGroups] = useState([]);
   const [teachers, setTeachers] = useState([]);
-  const [disciplines, setDisciplines] = useState([]); // Список дисциплин
+  const [disciplines, setDisciplines] = useState([]);
+  const [classrooms, setClassrooms] = useState([]);
 
   // Состояние для выбранных значений
   const [selectedGroup, setSelectedGroup] = useState('');
   const [selectedTeacher, setSelectedTeacher] = useState('');
+
+  // Массивы для выпадающих списков
+  const pairNumbers = Array.from({ length: 8 }, (_, i) => i + 1); // Номера пар (1-8)
+  const daysOfWeek = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']; // Дни недели
+  const weekNumbers = [1, 2]; // Номера недель (1 или 2)
 
   // Загрузка списков преподавателей, групп и дисциплин при монтировании компонента
   useEffect(() => {
@@ -50,6 +57,10 @@ const SchedulePage = () => {
 
         const disciplinesResponse = await getAllDisciplines(); // Загрузка дисциплин
         setDisciplines(disciplinesResponse.data);
+
+        const classroomsResponse = await getAllClassrooms(); // Загрузка аудиторий
+        setClassrooms(classroomsResponse.data.content); // Предполагается, что данные находятся в поле `content`
+      
       } catch (error) {
         console.error('Ошибка при загрузке данных:', error);
       }
@@ -63,6 +74,8 @@ const SchedulePage = () => {
       const selectedGroupId = groups.find((group) => group.name === schedule.groupName)?.id;
       const selectedTeacherId = teachers.find((teacher) => teacher.lastName === schedule.teacherName)?.id;
       const selectedDisciplineId = disciplines.find((discipline) => discipline.name === schedule.disciplineName)?.id;
+      const selectedClassroomId = classrooms.find((classroom) => classroom.name === schedule.classroomName)?.id;
+
 
       if (!selectedGroupId || !selectedTeacherId || !selectedDisciplineId) {
         alert('Выберите группу, преподавателя и дисциплину.');
@@ -73,7 +86,8 @@ const SchedulePage = () => {
         ...schedule,
         groupIds: [selectedGroupId],
         teacherId: selectedTeacherId,
-        disciplineId: selectedDisciplineId, // Добавляем ID дисциплины
+        disciplineId: selectedDisciplineId,
+        classroomId: selectedClassroomId,
       };
 
       await createSchedule(newSchedule);
@@ -89,8 +103,10 @@ const SchedulePage = () => {
       const selectedGroupId = groups.find((group) => group.name === schedule.groupName)?.id;
       const selectedTeacherId = teachers.find((teacher) => teacher.lastName === schedule.teacherName)?.id;
       const selectedDisciplineId = disciplines.find((discipline) => discipline.name === schedule.disciplineName)?.id;
+      const selectedClassroomId = classrooms.find((classroom) => classroom.name === schedule.classroomName)?.id;
 
-      if (!selectedGroupId || !selectedTeacherId || !selectedDisciplineId) {
+
+      if (!selectedGroupId || !selectedTeacherId || !selectedDisciplineId || !selectedClassroomId) {
         alert('Выберите группу, преподавателя и дисциплину.');
         return;
       }
@@ -99,7 +115,8 @@ const SchedulePage = () => {
         ...schedule,
         groupIds: [selectedGroupId],
         teacherId: selectedTeacherId,
-        disciplineId: selectedDisciplineId, // Добавляем ID дисциплины
+        disciplineId: selectedDisciplineId,
+        classroomId: selectedClassroomId,
       };
 
       await updateSchedule(scheduleId, updatedSchedule);
@@ -178,38 +195,67 @@ const SchedulePage = () => {
       {/* Форма создания/обновления расписания */}
       <div>
         <h3>Создать/Обновить расписание</h3>
-        <input
-          type="number"
-          placeholder="Номер пары"
+
+        {/* Выбор номера пары */}
+        <label>Номер пары:</label>
+        <select
           value={schedule.pairNumber}
           onChange={(e) =>
-            setSchedule({ ...schedule, pairNumber: e.target.value })
+            setSchedule({ ...schedule, pairNumber: parseInt(e.target.value) })
           }
-        />
-        <input
-          type="number"
-          placeholder="Номер недели"
+        >
+          {pairNumbers.map((number) => (
+            <option key={number} value={number}>
+              {number}
+            </option>
+          ))}
+        </select>
+
+        {/* Выбор номера недели */}
+        <label>Номер недели:</label>
+        <select
           value={schedule.weekNumber}
           onChange={(e) =>
-            setSchedule({ ...schedule, weekNumber: e.target.value })
+            setSchedule({ ...schedule, weekNumber: parseInt(e.target.value) })
           }
-        />
-        <input
-          type="text"
-          placeholder="День недели (MONDAY, TUESDAY...)"
+        >
+          {weekNumbers.map((number) => (
+            <option key={number} value={number}>
+              {number}
+            </option>
+          ))}
+        </select>
+
+        {/* Выбор дня недели */}
+        <label>День недели:</label>
+        <select
           value={schedule.dayOfWeek}
           onChange={(e) =>
             setSchedule({ ...schedule, dayOfWeek: e.target.value })
           }
-        />
-        <input
-          type="number"
-          placeholder="ID аудитории"
-          value={schedule.classroomId}
+        >
+          {daysOfWeek.map((day) => (
+            <option key={day} value={day}>
+              {day}
+            </option>
+          ))}
+        </select>
+
+        {/* Выбор аудитории */}
+        <label>Аудитория:</label>
+        <select
+          value={schedule.classroomName}
           onChange={(e) =>
-            setSchedule({ ...schedule, classroomId: e.target.value })
+            setSchedule({ ...schedule, classroomName: e.target.value })
           }
-        />
+        >
+          <option value="">-- Выберите аудиторию --</option>
+          {classrooms.map((classroom) => (
+            <option key={classroom.id} value={classroom.name}>
+              {classroom.name}
+            </option>
+          ))}
+        </select>
 
         {/* Выбор группы */}
         <label>Группа:</label>
