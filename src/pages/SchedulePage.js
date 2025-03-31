@@ -34,7 +34,11 @@ const SchedulePage = () => {
   const [groups, setGroups] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [disciplines, setDisciplines] = useState([]);
-  const [classrooms, setClassrooms] = useState([]);
+
+  // Состояние для пагинации аудиторий
+  const [classrooms, setClassrooms] = useState([]); // Текущая страница аудиторий
+  const [currentPage, setCurrentPage] = useState(0); // Текущая страница (начинается с 0)
+  const [totalPages, setTotalPages] = useState(0); // Общее количество страниц
 
   // Состояние для выбранных значений
   const [selectedGroup, setSelectedGroup] = useState('');
@@ -58,15 +62,42 @@ const SchedulePage = () => {
         const disciplinesResponse = await getAllDisciplines(); // Загрузка дисциплин
         setDisciplines(disciplinesResponse.data);
 
-        const classroomsResponse = await getAllClassrooms(); // Загрузка аудиторий
-        setClassrooms(classroomsResponse.data.content); // Предполагается, что данные находятся в поле `content`
-      
+        //const classroomsResponse = await getAllClassrooms(); // Загрузка аудиторий
+        //setClassrooms(classroomsResponse.data.content);
+
+        fetchClassrooms(currentPage);
       } catch (error) {
         console.error('Ошибка при загрузке данных:', error);
       }
     };
     fetchData();
   }, []);
+
+  const handlePrevPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+      fetchClassrooms(currentPage - 1);
+    }
+  };
+
+  // Переключение на следующую страницу
+  const handleNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(currentPage + 1);
+      fetchClassrooms(currentPage + 1);
+    }
+  };
+
+  // Загрузка аудиторий для текущей страницы
+  const fetchClassrooms = async (page, size = 10) => {
+    try {
+      const response = await getAllClassrooms(page, size);
+      setClassrooms(response.data.content); // Сохраняем текущую страницу аудиторий
+      setTotalPages(response.data.totalPages); // Сохраняем общее количество страниц
+    } catch (error) {
+      console.error('Ошибка при загрузке аудиторий:', error);
+    }
+  };
 
   // Создание расписания
   const handleCreateSchedule = async () => {
@@ -256,6 +287,19 @@ const SchedulePage = () => {
             </option>
           ))}
         </select>
+
+        {/* Кнопки пагинации */}
+        <div style={{ marginTop: '10px' }}>
+          <button onClick={handlePrevPage} disabled={currentPage === 0}>
+            Предыдущая страница
+          </button>
+          <span style={{ margin: '0 10px' }}>
+            Страница {currentPage + 1} из {totalPages}
+          </span>
+          <button onClick={handleNextPage} disabled={currentPage === totalPages - 1}>
+            Следующая страница
+          </button>
+        </div>
 
         {/* Выбор группы */}
         <label>Группа:</label>
