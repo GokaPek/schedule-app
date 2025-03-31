@@ -11,6 +11,7 @@ import {
   downloadSchedulePdf,
   getAllClassrooms,
 } from '../api/apiClient';
+import CustomDropdown from '../components/CustomDropdown';
 
 const SchedulePage = () => {
   // Состояние для формы создания/обновления расписания
@@ -274,32 +275,17 @@ const SchedulePage = () => {
 
         {/* Выбор аудитории */}
         <label>Аудитория:</label>
-        <select
-          value={schedule.classroomName}
-          onChange={(e) =>
-            setSchedule({ ...schedule, classroomName: e.target.value })
-          }
-        >
-          <option value="">-- Выберите аудиторию --</option>
-          {classrooms.map((classroom) => (
-            <option key={classroom.id} value={classroom.name}>
-              {classroom.name}
-            </option>
-          ))}
-        </select>
-
-        {/* Кнопки пагинации */}
-        <div style={{ marginTop: '10px' }}>
-          <button onClick={handlePrevPage} disabled={currentPage === 0}>
-            Предыдущая страница
-          </button>
-          <span style={{ margin: '0 10px' }}>
-            Страница {currentPage + 1} из {totalPages}
-          </span>
-          <button onClick={handleNextPage} disabled={currentPage === totalPages - 1}>
-            Следующая страница
-          </button>
-        </div>
+        <CustomDropdown
+          items={classrooms} // Список аудиторий
+          selectedItem={schedule.classroomName} // Выбранная аудитория
+          onItemSelect={(name) => setSchedule({ ...schedule, classroomName: name })} // Обработчик выбора
+          totalPages={totalPages} // Общее количество страниц
+          currentPage={currentPage} // Текущая страница
+          onPageChange={(direction) => {
+            if (direction === 'prev') handlePrevPage();
+            else handleNextPage();
+          }} // Обработчик переключения страниц
+        />
 
         {/* Выбор группы */}
         <label>Группа:</label>
