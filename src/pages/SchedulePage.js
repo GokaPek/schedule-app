@@ -7,6 +7,7 @@ import {
   getScheduleByTeacherId,
   getAllGroups,
   getAllTeachers,
+  downloadSchedulePdf,
 } from '../api/apiClient';
 
 const SchedulePage = () => {
@@ -53,7 +54,21 @@ const SchedulePage = () => {
   // Создание расписания
   const handleCreateSchedule = async () => {
     try {
-      await createSchedule(schedule);
+      const selectedGroupId = groups.find((group) => group.name === schedule.groupName)?.id;
+      const selectedTeacherId = teachers.find((teacher) => teacher.lastName === schedule.teacherName)?.id;
+
+      if (!selectedGroupId || !selectedTeacherId) {
+        alert('Выберите группу и преподавателя.');
+        return;
+      }
+
+      const newSchedule = {
+        ...schedule,
+        groupIds: [selectedGroupId],
+        teacherId: selectedTeacherId,
+      };
+
+      await createSchedule(newSchedule);
       alert('Расписание успешно создано!');
     } catch (error) {
       console.error('Ошибка при создании расписания:', error);
@@ -63,7 +78,21 @@ const SchedulePage = () => {
   // Обновление расписания
   const handleUpdateSchedule = async () => {
     try {
-      await updateSchedule(scheduleId, schedule);
+      const selectedGroupId = groups.find((group) => group.name === schedule.groupName)?.id;
+      const selectedTeacherId = teachers.find((teacher) => teacher.lastName === schedule.teacherName)?.id;
+
+      if (!selectedGroupId || !selectedTeacherId) {
+        alert('Выберите группу и преподавателя.');
+        return;
+      }
+
+      const updatedSchedule = {
+        ...schedule,
+        groupIds: [selectedGroupId],
+        teacherId: selectedTeacherId,
+      };
+
+      await updateSchedule(scheduleId, updatedSchedule);
       alert('Расписание успешно обновлено!');
     } catch (error) {
       console.error('Ошибка при обновлении расписания:', error);
@@ -110,6 +139,28 @@ const SchedulePage = () => {
     }
   };
 
+  // Скачивание PDF
+  const handleDownloadPdf = async () => {
+    try {
+      const selectedGroupId = groups.find((group) => group.name === selectedGroup)?.id;
+      if (!selectedGroupId) {
+        alert('Выберите группу из списка.');
+        return;
+      }
+
+      const response = await downloadSchedulePdf(selectedGroupId);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'schedule.pdf');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Ошибка при скачивании PDF:', error);
+    }
+  };
+
   return (
     <div>
       <h2>Управление расписанием</h2>
@@ -149,25 +200,39 @@ const SchedulePage = () => {
             setSchedule({ ...schedule, classroomId: e.target.value })
           }
         />
-        <input
-          type="number"
-          placeholder="ID преподавателя"
-          value={schedule.teacherId}
+
+        {/* Выбор группы */}
+        <label>Группа:</label>
+        <select
+          value={schedule.groupName}
           onChange={(e) =>
-            setSchedule({ ...schedule, teacherId: e.target.value })
+            setSchedule({ ...schedule, groupName: e.target.value })
           }
-        />
-        <input
-          type="text"
-          placeholder="ID групп (через запятую)"
-          value={schedule.groupIds.join(',')}
+        >
+          <option value="">-- Выберите группу --</option>
+          {groups.map((group) => (
+            <option key={group.id} value={group.name}>
+              {group.name}
+            </option>
+          ))}
+        </select>
+
+        {/* Выбор преподавателя */}
+        <label>Преподаватель:</label>
+        <select
+          value={schedule.teacherName}
           onChange={(e) =>
-            setSchedule({
-              ...schedule,
-              groupIds: e.target.value.split(',').map(Number),
-            })
+            setSchedule({ ...schedule, teacherName: e.target.value })
           }
-        />
+        >
+          <option value="">-- Выберите преподавателя --</option>
+          {teachers.map((teacher) => (
+            <option key={teacher.id} value={teacher.lastName}>
+              {teacher.lastName}
+            </option>
+          ))}
+        </select>
+
         <button onClick={handleCreateSchedule}>Создать</button>
         <button onClick={handleUpdateSchedule}>Обновить</button>
       </div>
@@ -223,23 +288,29 @@ const SchedulePage = () => {
         </div>
       </div>
 
+      {/* Кнопка скачивания PDF */}
+      <div>
+        <h3>Скачать расписание в PDF</h3>
+        <button onClick={handleDownloadPdf}>Скачать PDF</button>
+      </div>
+
       {/* Отображение расписания */}
       <div>
         <h3>Расписание</h3>
         {fetchedSchedule.length > 0 ? (
           <ul>
-            {fetchedSchedule.map((item) => (
-              <li key={item.id}>
-                Неделя {item.weekNumber}, {item.dayOfWeek}, Пара {item.pairNumber}:{' '}
-                {item.courseName} - Аудитория {item.classroomName} (Преподаватель:{' '}
-                {item.teacherName}, Группы: {item.groupNames})
-              </li>
-            ))}
+          {fetchedSchedule.map((item) => (
+            <li key={item.id}>
+              Неделя {item.weekNumber}, {item.dayOfWeek}, Пара {item.pairNumber}:{' '}
+              {item.courseName} - Аудитория {item.classroomName} (Преподаватель:{' '}
+              {item.teacherName}, Группы: {item.groupNames}, Дисциплина: {item.disciplineName})
+            </li>
+          ))}
           </ul>
-        ) : (
-          <p>Расписание не найдено</p>
-        )}
-      </div>
+          ) : (
+            <p>Расписание не найдено</p>
+          )}
+        </div>
     </div>
   );
 };

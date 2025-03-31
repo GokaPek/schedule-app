@@ -28,3 +28,5 @@ export const getAllGroups = () => apiClient.get('/groups');
 
 // Функции для работы с преподавателями
 export const getAllTeachers = () => apiClient.get('/teachers');
+export const downloadSchedulePdf = (groupId) =>
+  apiClient.get(`/schedules/download/${groupId}`, { responseType: 'blob' });
