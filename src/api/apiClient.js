@@ -30,3 +30,6 @@ export const getAllGroups = () => apiClient.get('/groups');
 export const getAllTeachers = () => apiClient.get('/teachers');
 export const downloadSchedulePdf = (groupId) =>
   apiClient.get(`/schedules/download/${groupId}`, { responseType: 'blob' });
+
+// Функции для работы с дисциплинами
+export const getAllDisciplines = () => apiClient.get('/disciplines');

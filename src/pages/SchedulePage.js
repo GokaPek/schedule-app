@@ -7,6 +7,7 @@ import {
   getScheduleByTeacherId,
   getAllGroups,
   getAllTeachers,
+  getAllDisciplines, // Новый метод для получения дисциплин
   downloadSchedulePdf,
 } from '../api/apiClient';
 
@@ -19,6 +20,7 @@ const SchedulePage = () => {
     classroomId: null,
     teacherId: null,
     groupIds: [],
+    disciplineName: '', // Название выбранной дисциплины
   });
 
   // Состояние для удаления расписания
@@ -27,28 +29,32 @@ const SchedulePage = () => {
   // Состояние для отображения расписания
   const [fetchedSchedule, setFetchedSchedule] = useState([]);
 
-  // Состояние для списков преподавателей и групп
+  // Состояние для списков преподавателей, групп и дисциплин
   const [groups, setGroups] = useState([]);
   const [teachers, setTeachers] = useState([]);
+  const [disciplines, setDisciplines] = useState([]); // Список дисциплин
 
   // Состояние для выбранных значений
   const [selectedGroup, setSelectedGroup] = useState('');
   const [selectedTeacher, setSelectedTeacher] = useState('');
 
-  // Загрузка списков преподавателей и групп при монтировании компонента
+  // Загрузка списков преподавателей, групп и дисциплин при монтировании компонента
   useEffect(() => {
-    const fetchGroupsAndTeachers = async () => {
+    const fetchData = async () => {
       try {
         const groupsResponse = await getAllGroups();
         setGroups(groupsResponse.data);
 
         const teachersResponse = await getAllTeachers();
         setTeachers(teachersResponse.data);
+
+        const disciplinesResponse = await getAllDisciplines(); // Загрузка дисциплин
+        setDisciplines(disciplinesResponse.data);
       } catch (error) {
-        console.error('Ошибка при загрузке групп и преподавателей:', error);
+        console.error('Ошибка при загрузке данных:', error);
       }
     };
-    fetchGroupsAndTeachers();
+    fetchData();
   }, []);
 
   // Создание расписания
@@ -56,9 +62,10 @@ const SchedulePage = () => {
     try {
       const selectedGroupId = groups.find((group) => group.name === schedule.groupName)?.id;
       const selectedTeacherId = teachers.find((teacher) => teacher.lastName === schedule.teacherName)?.id;
+      const selectedDisciplineId = disciplines.find((discipline) => discipline.name === schedule.disciplineName)?.id;
 
-      if (!selectedGroupId || !selectedTeacherId) {
-        alert('Выберите группу и преподавателя.');
+      if (!selectedGroupId || !selectedTeacherId || !selectedDisciplineId) {
+        alert('Выберите группу, преподавателя и дисциплину.');
         return;
       }
 
@@ -66,6 +73,7 @@ const SchedulePage = () => {
         ...schedule,
         groupIds: [selectedGroupId],
         teacherId: selectedTeacherId,
+        disciplineId: selectedDisciplineId, // Добавляем ID дисциплины
       };
 
       await createSchedule(newSchedule);
@@ -80,9 +88,10 @@ const SchedulePage = () => {
     try {
       const selectedGroupId = groups.find((group) => group.name === schedule.groupName)?.id;
       const selectedTeacherId = teachers.find((teacher) => teacher.lastName === schedule.teacherName)?.id;
+      const selectedDisciplineId = disciplines.find((discipline) => discipline.name === schedule.disciplineName)?.id;
 
-      if (!selectedGroupId || !selectedTeacherId) {
-        alert('Выберите группу и преподавателя.');
+      if (!selectedGroupId || !selectedTeacherId || !selectedDisciplineId) {
+        alert('Выберите группу, преподавателя и дисциплину.');
         return;
       }
 
@@ -90,6 +99,7 @@ const SchedulePage = () => {
         ...schedule,
         groupIds: [selectedGroupId],
         teacherId: selectedTeacherId,
+        disciplineId: selectedDisciplineId, // Добавляем ID дисциплины
       };
 
       await updateSchedule(scheduleId, updatedSchedule);
@@ -233,6 +243,22 @@ const SchedulePage = () => {
           ))}
         </select>
 
+        {/* Выбор дисциплины */}
+        <label>Дисциплина:</label>
+        <select
+          value={schedule.disciplineName}
+          onChange={(e) =>
+            setSchedule({ ...schedule, disciplineName: e.target.value })
+          }
+        >
+          <option value="">-- Выберите дисциплину --</option>
+          {disciplines.map((discipline) => (
+            <option key={discipline.id} value={discipline.name}>
+              {discipline.name}
+            </option>
+          ))}
+        </select>
+
         <button onClick={handleCreateSchedule}>Создать</button>
         <button onClick={handleUpdateSchedule}>Обновить</button>
       </div>
@@ -299,18 +325,18 @@ const SchedulePage = () => {
         <h3>Расписание</h3>
         {fetchedSchedule.length > 0 ? (
           <ul>
-          {fetchedSchedule.map((item) => (
-            <li key={item.id}>
-              Неделя {item.weekNumber}, {item.dayOfWeek}, Пара {item.pairNumber}:{' '}
-              {item.courseName} - Аудитория {item.classroomName} (Преподаватель:{' '}
-              {item.teacherName}, Группы: {item.groupNames}, Дисциплина: {item.disciplineName})
-            </li>
-          ))}
+            {fetchedSchedule.map((item) => (
+              <li key={item.id}>
+                Неделя {item.weekNumber}, {item.dayOfWeek}, Пара {item.pairNumber}:{' '}
+                {item.courseName} - Аудитория {item.classroomName} (Преподаватель:{' '}
+                {item.teacherName}, Группы: {item.groupNames}, Дисциплина: {item.disciplineName})
+              </li>
+            ))}
           </ul>
-          ) : (
-            <p>Расписание не найдено</p>
-          )}
-        </div>
+        ) : (
+          <p>Расписание не найдено</p>
+        )}
+      </div>
     </div>
   );
 };
