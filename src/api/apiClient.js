@@ -22,6 +22,7 @@ export const updateSchedule = (id, schedule) => apiClient.put(`/schedules/${id}`
 export const deleteSchedule = (id) => apiClient.delete(`/schedules/${id}`);
 export const getScheduleByGroupId = (groupId) => apiClient.get(`/schedules/group/${groupId}`);
 export const getScheduleByTeacherId = (teacherId) => apiClient.get(`/schedules/teacher/${teacherId}`);
+export const autoGenerate = () => apiClient.post(`/schedules/auto-generate`);
 
 // Функции для работы с группами
 export const getAllGroups = () => apiClient.get('/groups');

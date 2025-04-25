@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  autoGenerate,
   createSchedule,
   updateSchedule,
   deleteSchedule,
@@ -220,9 +221,23 @@ const SchedulePage = () => {
     }
   };
 
+  const handleAutoGenerate = async () => {
+    try {
+      await autoGenerate();
+      alert('Расписание успешно сгенерировано!');
+    } catch (error) {
+      console.error('Ошибка при автогенерации расписания:', error);
+      alert('Произошла ошибка при генерации расписания');
+    }
+  };
+
   return (
     <div>
       <h2>Управление расписанием</h2>
+        <div style={{ marginTop: '2rem' }}>
+          <h3>Генерация расписания</h3>
+          <button onClick={handleAutoGenerate}>Сгенерировать недостающее расписание</button>
+        </div>
 
       {/* Форма создания/обновления расписания */}
       <div>
