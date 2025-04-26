@@ -15,43 +15,31 @@ import {
 import CustomDropdown from '../components/CustomDropdown';
 
 const SchedulePage = () => {
-  // Состояние для формы создания/обновления расписания
   const [schedule, setSchedule] = useState({
-    pairNumber: 1, // Номер пары (по умолчанию 1)
-    weekNumber: 1, // Номер недели (по умолчанию 1)
-    dayOfWeek: 'MONDAY', // День недели (по умолчанию MONDAY)
+    pairNumber: null,
+    weekNumber: null,
+    dayOfWeek: '',
     classroomId: null,
     teacherId: null,
     groupIds: [],
-    disciplineName: '', // Название выбранной дисциплины
+    disciplineName: '',
   });
 
-  // Состояние для удаления расписания
   const [scheduleId, setScheduleId] = useState('');
-
-  // Состояние для отображения расписания
   const [fetchedSchedule, setFetchedSchedule] = useState([]);
-
-  // Состояние для списков преподавателей, групп и дисциплин
   const [groups, setGroups] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [disciplines, setDisciplines] = useState([]);
-
-  // Состояние для пагинации аудиторий
-  const [classrooms, setClassrooms] = useState([]); // Текущая страница аудиторий
-  const [currentPage, setCurrentPage] = useState(0); // Текущая страница (начинается с 0)
-  const [totalPages, setTotalPages] = useState(0); // Общее количество страниц
-
-  // Состояние для выбранных значений
+  const [classrooms, setClassrooms] = useState([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [selectedGroup, setSelectedGroup] = useState('');
   const [selectedTeacher, setSelectedTeacher] = useState('');
 
-  // Массивы для выпадающих списков
-  const pairNumbers = Array.from({ length: 8 }, (_, i) => i + 1); // Номера пар (1-8)
-  const daysOfWeek = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']; // Дни недели
-  const weekNumbers = [1, 2]; // Номера недель (1 или 2)
+  const pairNumbers = Array.from({ length: 8 }, (_, i) => i + 1);
+  const daysOfWeek = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+  const weekNumbers = [1, 2];
 
-  // Загрузка списков преподавателей, групп и дисциплин при монтировании компонента
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -61,11 +49,8 @@ const SchedulePage = () => {
         const teachersResponse = await getAllTeachers();
         setTeachers(teachersResponse.data);
 
-        const disciplinesResponse = await getAllDisciplines(); // Загрузка дисциплин
+        const disciplinesResponse = await getAllDisciplines();
         setDisciplines(disciplinesResponse.data);
-
-        //const classroomsResponse = await getAllClassrooms(); // Загрузка аудиторий
-        //setClassrooms(classroomsResponse.data.content);
 
         fetchClassrooms(currentPage);
       } catch (error) {
@@ -82,7 +67,6 @@ const SchedulePage = () => {
     }
   };
 
-  // Переключение на следующую страницу
   const handleNextPage = () => {
     if (currentPage < totalPages - 1) {
       setCurrentPage(currentPage + 1);
@@ -90,25 +74,22 @@ const SchedulePage = () => {
     }
   };
 
-  // Загрузка аудиторий для текущей страницы
   const fetchClassrooms = async (page, size = 10) => {
     try {
       const response = await getAllClassrooms(page, size);
-      setClassrooms(response.data.content); // Сохраняем текущую страницу аудиторий
-      setTotalPages(response.data.totalPages); // Сохраняем общее количество страниц
+      setClassrooms(response.data.content);
+      setTotalPages(response.data.totalPages);
     } catch (error) {
       console.error('Ошибка при загрузке аудиторий:', error);
     }
   };
 
-  // Создание расписания
   const handleCreateSchedule = async () => {
     try {
       const selectedGroupId = groups.find((group) => group.name === schedule.groupName)?.id;
       const selectedTeacherId = teachers.find((teacher) => teacher.lastName === schedule.teacherName)?.id;
       const selectedDisciplineId = disciplines.find((discipline) => discipline.name === schedule.disciplineName)?.id;
       const selectedClassroomId = classrooms.find((classroom) => classroom.name === schedule.classroomName)?.id;
-
 
       if (!selectedGroupId || !selectedTeacherId || !selectedDisciplineId) {
         alert('Выберите группу, преподавателя и дисциплину.');
@@ -120,7 +101,10 @@ const SchedulePage = () => {
         groupIds: [selectedGroupId],
         teacherId: selectedTeacherId,
         disciplineId: selectedDisciplineId,
-        classroomId: selectedClassroomId,
+        classroomId: selectedClassroomId ?? null,
+        pairNumber: schedule.pairNumber ?? null,
+        weekNumber: schedule.weekNumber ?? null,
+        dayOfWeek: schedule.dayOfWeek || null,
       };
 
       await createSchedule(newSchedule);
@@ -130,7 +114,6 @@ const SchedulePage = () => {
     }
   };
 
-  // Обновление расписания
   const handleUpdateSchedule = async () => {
     try {
       const selectedGroupId = groups.find((group) => group.name === schedule.groupName)?.id;
@@ -138,8 +121,7 @@ const SchedulePage = () => {
       const selectedDisciplineId = disciplines.find((discipline) => discipline.name === schedule.disciplineName)?.id;
       const selectedClassroomId = classrooms.find((classroom) => classroom.name === schedule.classroomName)?.id;
 
-
-      if (!selectedGroupId || !selectedTeacherId || !selectedDisciplineId || !selectedClassroomId) {
+      if (!selectedGroupId || !selectedTeacherId || !selectedDisciplineId) {
         alert('Выберите группу, преподавателя и дисциплину.');
         return;
       }
@@ -149,7 +131,10 @@ const SchedulePage = () => {
         groupIds: [selectedGroupId],
         teacherId: selectedTeacherId,
         disciplineId: selectedDisciplineId,
-        classroomId: selectedClassroomId,
+        classroomId: selectedClassroomId ?? null,
+        pairNumber: schedule.pairNumber ?? null,
+        weekNumber: schedule.weekNumber ?? null,
+        dayOfWeek: schedule.dayOfWeek || null,
       };
 
       await updateSchedule(scheduleId, updatedSchedule);
@@ -234,72 +219,58 @@ const SchedulePage = () => {
   return (
     <div>
       <h2>Управление расписанием</h2>
-        <div style={{ marginTop: '2rem' }}>
-          <h3>Генерация расписания</h3>
-          <button onClick={handleAutoGenerate}>Сгенерировать недостающее расписание</button>
-        </div>
+      <div style={{ marginTop: '2rem' }}>
+        <h3>Генерация расписания</h3>
+        <button onClick={handleAutoGenerate}>Сгенерировать недостающее расписание</button>
+      </div>
 
-      {/* Форма создания/обновления расписания */}
       <div>
         <h3>Создать/Обновить расписание</h3>
 
-        {/* Выбор номера пары */}
-        <label>Номер пары:</label>
+        <label>Номер пары (опционально):</label>
         <select
-          value={schedule.pairNumber}
-          onChange={(e) =>
-            setSchedule({ ...schedule, pairNumber: parseInt(e.target.value) })
-          }
+          value={schedule.pairNumber || ''}
+          onChange={(e) => setSchedule({ ...schedule, pairNumber: e.target.value ? parseInt(e.target.value) : null })}
         >
+          <option value="">-- Не указано --</option>
           {pairNumbers.map((number) => (
-            <option key={number} value={number}>
-              {number}
-            </option>
+            <option key={number} value={number}>{number}</option>
           ))}
         </select>
 
-        {/* Выбор номера недели */}
-        <label>Номер недели:</label>
+        <label>Номер недели (опционально):</label>
         <select
-          value={schedule.weekNumber}
-          onChange={(e) =>
-            setSchedule({ ...schedule, weekNumber: parseInt(e.target.value) })
-          }
+          value={schedule.weekNumber || ''}
+          onChange={(e) => setSchedule({ ...schedule, weekNumber: e.target.value ? parseInt(e.target.value) : null })}
         >
+          <option value="">-- Не указано --</option>
           {weekNumbers.map((number) => (
-            <option key={number} value={number}>
-              {number}
-            </option>
+            <option key={number} value={number}>{number}</option>
           ))}
         </select>
 
-        {/* Выбор дня недели */}
-        <label>День недели:</label>
+        <label>День недели (опционально):</label>
         <select
-          value={schedule.dayOfWeek}
-          onChange={(e) =>
-            setSchedule({ ...schedule, dayOfWeek: e.target.value })
-          }
+          value={schedule.dayOfWeek || ''}
+          onChange={(e) => setSchedule({ ...schedule, dayOfWeek: e.target.value || '' })}
         >
+          <option value="">-- Не указано --</option>
           {daysOfWeek.map((day) => (
-            <option key={day} value={day}>
-              {day}
-            </option>
+            <option key={day} value={day}>{day}</option>
           ))}
         </select>
 
-        {/* Выбор аудитории */}
-        <label>Аудитория:</label>
+        <label>Аудитория (опционально):</label>
         <CustomDropdown
-          items={classrooms} // Список аудиторий
-          selectedItem={schedule.classroomName} // Выбранная аудитория
-          onItemSelect={(name) => setSchedule({ ...schedule, classroomName: name })} // Обработчик выбора
-          totalPages={totalPages} // Общее количество страниц
-          currentPage={currentPage} // Текущая страница
+          items={classrooms}
+          selectedItem={schedule.classroomName}
+          onItemSelect={(name) => setSchedule({ ...schedule, classroomName: name })}
+          totalPages={totalPages}
+          currentPage={currentPage}
           onPageChange={(direction) => {
             if (direction === 'prev') handlePrevPage();
             else handleNextPage();
-          }} // Обработчик переключения страниц
+          }}
         />
 
         {/* Выбор группы */}
