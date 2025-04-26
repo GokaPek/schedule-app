@@ -86,19 +86,18 @@ const SchedulePage = () => {
 
   const handleCreateSchedule = async () => {
     try {
-      const selectedGroupId = groups.find((group) => group.name === schedule.groupName)?.id;
       const selectedTeacherId = teachers.find((teacher) => teacher.lastName === schedule.teacherName)?.id;
       const selectedDisciplineId = disciplines.find((discipline) => discipline.name === schedule.disciplineName)?.id;
       const selectedClassroomId = classrooms.find((classroom) => classroom.name === schedule.classroomName)?.id;
 
-      if (!selectedGroupId || !selectedTeacherId || !selectedDisciplineId) {
-        alert('Выберите группу, преподавателя и дисциплину.');
+      if (!schedule.groupIds.length || !selectedTeacherId || !selectedDisciplineId) {
+        alert('Выберите хотя бы одну группу, преподавателя и дисциплину.');
         return;
       }
 
       const newSchedule = {
         ...schedule,
-        groupIds: [selectedGroupId],
+        groupIds: schedule.groupIds,
         teacherId: selectedTeacherId,
         disciplineId: selectedDisciplineId,
         classroomId: selectedClassroomId ?? null,
@@ -116,19 +115,18 @@ const SchedulePage = () => {
 
   const handleUpdateSchedule = async () => {
     try {
-      const selectedGroupId = groups.find((group) => group.name === schedule.groupName)?.id;
       const selectedTeacherId = teachers.find((teacher) => teacher.lastName === schedule.teacherName)?.id;
       const selectedDisciplineId = disciplines.find((discipline) => discipline.name === schedule.disciplineName)?.id;
       const selectedClassroomId = classrooms.find((classroom) => classroom.name === schedule.classroomName)?.id;
 
-      if (!selectedGroupId || !selectedTeacherId || !selectedDisciplineId) {
-        alert('Выберите группу, преподавателя и дисциплину.');
+      if (!schedule.groupIds.length || !selectedTeacherId || !selectedDisciplineId) {
+        alert('Выберите хотя бы одну группу, преподавателя и дисциплину.');
         return;
       }
 
       const updatedSchedule = {
         ...schedule,
-        groupIds: [selectedGroupId],
+        groupIds: schedule.groupIds,
         teacherId: selectedTeacherId,
         disciplineId: selectedDisciplineId,
         classroomId: selectedClassroomId ?? null,
@@ -274,16 +272,17 @@ const SchedulePage = () => {
         />
 
         {/* Выбор группы */}
-        <label>Группа:</label>
+        <label>Группы:</label>
         <select
-          value={schedule.groupName}
-          onChange={(e) =>
-            setSchedule({ ...schedule, groupName: e.target.value })
-          }
+          multiple
+          value={schedule.groupIds}
+          onChange={(e) => {
+            const selectedOptions = Array.from(e.target.selectedOptions, (option) => option.value);
+            setSchedule({ ...schedule, groupIds: selectedOptions });
+          }}
         >
-          <option value="">-- Выберите группу --</option>
           {groups.map((group) => (
-            <option key={group.id} value={group.name}>
+            <option key={group.id} value={group.id}>
               {group.name}
             </option>
           ))}
