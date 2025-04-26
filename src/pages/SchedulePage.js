@@ -143,10 +143,16 @@ const SchedulePage = () => {
   };
 
   // Удаление расписания
-  const handleDeleteSchedule = async () => {
+  const handleDeleteSchedule = async (id) => {
     try {
-      await deleteSchedule(scheduleId);
+      await deleteSchedule(id);
       alert('Расписание успешно удалено!');
+      // После удаления обновляем список
+      if (selectedGroup) {
+        handleGetScheduleByGroupId();
+      } else if (selectedTeacher) {
+        handleGetScheduleByTeacherId();
+      }
     } catch (error) {
       console.error('Ошибка при удалении расписания:', error);
     }
@@ -324,18 +330,6 @@ const SchedulePage = () => {
         <button onClick={handleUpdateSchedule}>Обновить</button>
       </div>
 
-      {/* Форма удаления расписания */}
-      <div>
-        <h3>Удалить расписание</h3>
-        <input
-          type="number"
-          placeholder="ID расписания"
-          value={scheduleId}
-          onChange={(e) => setScheduleId(e.target.value)}
-        />
-        <button onClick={handleDeleteSchedule}>Удалить</button>
-      </div>
-
       {/* Выбор группы или преподавателя */}
       <div>
         <h3>Получить расписание</h3>
@@ -382,20 +376,27 @@ const SchedulePage = () => {
       </div>
 
       {/* Отображение расписания */}
-      <div>
+      {/* Вывод расписания с кнопкой удаления */}
+      <div style={{ marginTop: '2rem' }}>
         <h3>Расписание</h3>
-        {fetchedSchedule.length > 0 ? (
+        {fetchedSchedule.length === 0 ? (
+          <p>Нет данных для отображения.</p>
+        ) : (
           <ul>
             {fetchedSchedule.map((item) => (
-              <li key={item.id}>
-                Неделя {item.weekNumber}, {item.dayOfWeek}, Пара {item.pairNumber}:{' '}
-                {item.courseName} - Аудитория {item.classroomName} (Преподаватель:{' '}
-                {item.teacherName}, Группы: {item.groupNames}, Дисциплина: {item.disciplineName})
+              <li key={item.id} style={{ marginBottom: '1rem' }}>
+                <button
+                  style={{ marginLeft: '1rem', color: 'white', backgroundColor: 'red' }}
+                  onClick={() => handleDeleteSchedule(item.id)}
+                >
+                  Удалить
+                </button>
+                Пара: {item.pairNumber}, День: {item.dayOfWeek}, Неделя: {item.weekNumber},
+                Аудитория: {item.classroomName}, Дисциплина: {item.disciplineName}, Группы: {item.groupNames}
+
               </li>
             ))}
           </ul>
-        ) : (
-          <p>Расписание не найдено</p>
         )}
       </div>
     </div>
