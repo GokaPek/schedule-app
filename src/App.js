@@ -1,19 +1,21 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import ClassroomPage from './pages/ClassroomPage';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Layout from './components/Layout';
 import SchedulePage from './pages/SchedulePage';
+import ClassroomPage from './pages/ClassroomPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 function App() {
   return (
     <Router>
-      <nav>
-        <Link to="/classrooms">Аудитории</Link> | 
-        <Link to="/schedules">Расписание</Link>
-      </nav>
-      <Routes>
-        <Route path="/classrooms" element={<ClassroomPage />} />
-        <Route path="/schedules" element={<SchedulePage />} />
-      </Routes>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<SchedulePage />} />
+          <Route path="/schedule" element={<SchedulePage />} />
+          <Route path="/classrooms" element={<ClassroomPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Layout>
     </Router>
   );
 }
