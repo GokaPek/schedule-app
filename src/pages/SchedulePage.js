@@ -92,7 +92,7 @@ const SchedulePage = () => {
       const selectedClassroomId = classrooms.find((classroom) => classroom.name === schedule.classroomName)?.id;
 
       if (!schedule.groupIds.length || !selectedTeacherId || !selectedDisciplineId) {
-        alert('Выберите хотя бы одну группу, преподавателя и дисциплину.');
+        alert('Выберите хотя бы одну группу, преподавателя и дисциплину, аудиторию. Убедитесь что преподаватель не перерабатывает.');
         return;
       }
 
