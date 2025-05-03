@@ -176,7 +176,7 @@ const SchedulePage = () => {
         return;
       }
       const response = await getScheduleByGroupId(selectedGroupId);
-      setFetchedSchedule(response.data);
+      setFetchedSchedule(sortSchedule(response.data));
     } catch (error) {
       console.error('Ошибка при получении расписания по группе:', error);
     }
@@ -190,7 +190,7 @@ const SchedulePage = () => {
         return;
       }
       const response = await getScheduleByTeacherId(selectedTeacherId);
-      setFetchedSchedule(response.data);
+      setFetchedSchedule(sortSchedule(response.data));
     } catch (error) {
       console.error('Ошибка при получении расписания по преподавателю:', error);
     }
@@ -225,6 +225,17 @@ const SchedulePage = () => {
       console.error('Ошибка при автогенерации расписания:', error);
       alert('Произошла ошибка при генерации расписания');
     }
+  };
+
+  const sortSchedule = (scheduleArray) => {
+    return scheduleArray.sort((a, b) => {
+      const dayA = daysOfWeek.indexOf(a.dayOfWeek);
+      const dayB = daysOfWeek.indexOf(b.dayOfWeek);
+  
+      if (dayA !== dayB) return dayA - dayB;
+      if (a.weekNumber !== b.weekNumber) return a.weekNumber - b.weekNumber;
+      return a.pairNumber - b.pairNumber;
+    });
   };
 
   return (
