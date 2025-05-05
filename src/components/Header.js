@@ -16,21 +16,38 @@ const Header = () => {
           <div className="collapse navbar-collapse" id="navbarNav">
             <ul className="navbar-nav me-auto">
               <li className="nav-item">
-                <NavLink 
-                  className="nav-link" 
-                  to="/schedule"
-                  activeClassName="active"
-                >
-                  <i className="fas fa-table me-1"></i> Расписание
+                <NavLink className="nav-link" to="/schedule" activeClassName="active">
+                  <i className="fas fa-calendar-week me-1"></i> Расписание
                 </NavLink>
               </li>
               <li className="nav-item">
-                <NavLink 
-                  className="nav-link" 
-                  to="/classrooms"
-                  activeClassName="active"
-                >
-                  <i className="fas fa-door-open me-1"></i> Аудитории
+                <NavLink className="nav-link" to="/classrooms" activeClassName="active">
+                  <i className="fas fa-chalkboard-teacher me-1"></i> Аудитории
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/facultys" activeClassName="active">
+                  <i className="fas fa-university me-1"></i> Факультеты
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/departments" activeClassName="active">
+                  <i className="fas fa-sitemap me-1"></i> Кафедры
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/directions" activeClassName="active">
+                  <i className="fas fa-compass me-1"></i> Направления
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/teachers" activeClassName="active">
+                  <i className="fas fa-user-graduate me-1"></i> Преподаватели
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/groups" activeClassName="active">
+                  <i className="fas fa-users me-1"></i> Группы
                 </NavLink>
               </li>
             </ul>
