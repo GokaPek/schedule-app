@@ -9,7 +9,8 @@ const TeacherPage = () => {
     id: null, 
     firstName: '', 
     lastName: '', 
-    departmentId: '' 
+    departmentId: '',
+    time_limit: 0 // Добавлено поле для ограничения времени
   });
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -40,7 +41,13 @@ const TeacherPage = () => {
       } else {
         await createTeacher(form);
       }
-      setForm({ id: null, firstName: '', lastName: '', departmentId: '' });
+      setForm({ 
+        id: null, 
+        firstName: '', 
+        lastName: '', 
+        departmentId: '',
+        time_limit: 0 
+      });
       await loadData();
     } catch (error) {
       console.error('Ошибка при сохранении:', error);
@@ -53,21 +60,28 @@ const TeacherPage = () => {
       firstName: teacher.firstName,
       lastName: teacher.lastName,
       departmentId: teacher.departmentId,
+      time_limit: teacher.time_limit || 0 // Устанавливаем текущее значение
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Вы уверены, что хотите удалить этого преподавателя?')) {
+    if (window.confirm('Вы уверены?')) {
       try {
-        await deleteTeacher(id);
-        await loadData();
+        console.log('Пытаюсь удалить элемент с ID:', id); // Логируем ID
+        const response = await deleteTeacher(id);
+        console.log('Ответ сервера:', response); // Логируем полный ответ
+        setTeachers(prev => prev.filter(t => t.id !== id));
       } catch (error) {
-        console.error('Ошибка при удалении:', error);
+        console.error('Полная ошибка удаления:', {
+          message: error.message,
+          response: error.response,
+          stack: error.stack
+        });
       }
     }
   };
-
+  
   const filteredTeachers = teachers.filter(teacher => {
     const fullName = `${teacher.lastName} ${teacher.firstName}`.toLowerCase();
     const department = departments.find(d => d.id === teacher.departmentId)?.name || '';
@@ -91,7 +105,7 @@ const TeacherPage = () => {
           {/* Форма добавления/редактирования */}
           <form onSubmit={handleSubmit} className="mb-4">
             <div className="row g-3">
-              <div className="col-md-4">
+              <div className="col-md-3">
                 <label className="form-label">Фамилия</label>
                 <input
                   type="text"
@@ -103,7 +117,7 @@ const TeacherPage = () => {
                 />
               </div>
               
-              <div className="col-md-4">
+              <div className="col-md-3">
                 <label className="form-label">Имя</label>
                 <input
                   type="text"
@@ -128,6 +142,18 @@ const TeacherPage = () => {
                     <option key={d.id} value={d.id}>{d.name}</option>
                   )}
                 </select>
+              </div>
+
+              <div className="col-md-2">
+                <label className="form-label">Лимит часов</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  placeholder="Часы"
+                  min="0"
+                  value={form.time_limit}
+                  onChange={(e) => setForm({ ...form, time_limit: parseInt(e.target.value) || 0 })}
+                />
               </div>
               
               <div className="col-md-1 d-flex align-items-end">
@@ -181,6 +207,7 @@ const TeacherPage = () => {
                     <th width="50">ID</th>
                     <th>Преподаватель</th>
                     <th>Кафедра</th>
+                    <th>Лимит часов</th>
                     <th width="120" className="text-end">Действия</th>
                   </tr>
                 </thead>
@@ -211,6 +238,11 @@ const TeacherPage = () => {
                               <span className="text-muted">Не указана</span>
                             )}
                           </td>
+                          <td>
+                            <span className={`badge ${teacher.time_limit > 0 ? 'bg-success' : 'bg-secondary'}`}>
+                              {teacher.time_limit || 'Не задан'}
+                            </span>
+                          </td>
                           <td className="text-end">
                             <button 
                               onClick={() => handleEdit(teacher)}
@@ -232,7 +264,7 @@ const TeacherPage = () => {
                     })
                   ) : (
                     <tr>
-                      <td colSpan="4" className="text-center py-4 text-muted">
+                      <td colSpan="5" className="text-center py-4 text-muted">
                         {searchTerm ? 'Ничего не найдено' : 'Список преподавателей пуст'}
                       </td>
                     </tr>
