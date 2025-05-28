@@ -199,9 +199,10 @@ const ClassroomPage = () => {
                             </span>
                           </td>
                           <td>
-                            <button className="btn btn-sm btn-outline-primary me-1">
+                            {/* <button className="btn btn-sm btn-outline-primary me-1">
                               <i className="fas fa-edit"></i>
                             </button>
+                            */}
                             <button className="btn btn-sm btn-outline-danger">
                               <i className="fas fa-trash"></i>
                             </button>
