@@ -1,7 +1,20 @@
 import React from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 
 const Header = () => {
+  const navigate = useNavigate();
+
+  const token = localStorage.getItem('token'); // Проверяем наличие токена
+
+  const handleLogout = () => {
+    localStorage.removeItem('token'); // Очистить токен
+    navigate('/login'); // Перейти на страницу логина
+  };
+
+  const handleLogin = () => {
+    navigate('/login');
+  };
+
   return (
     <header className="app-header">
       <nav className="navbar navbar-expand-lg navbar-dark bg-primary">
@@ -52,12 +65,20 @@ const Header = () => {
               </li>
             </ul>
             <div className="d-flex">
-              <span className="navbar-text me-3">
-                <i className="fas fa-user-circle me-1"></i> Администратор
-              </span>
-              <button className="btn btn-outline-light btn-sm">
-                <i className="fas fa-sign-out-alt"></i>
-              </button>
+              {token ? (
+                <>
+                  <span className="navbar-text me-3">
+                    <i className="fas fa-user-circle me-1"></i> Администратор
+                  </span>
+                  <button className="btn btn-outline-light btn-sm" onClick={handleLogout}>
+                    <i className="fas fa-sign-out-alt"></i>
+                  </button>
+                </>
+              ) : (
+                <button className="btn btn-outline-light btn-sm" onClick={handleLogin}>
+                  Войти
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -1,5 +1,4 @@
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import SchedulePage from './pages/SchedulePage';
 import ClassroomPage from './pages/ClassroomPage';
@@ -9,12 +8,15 @@ import FacultyPage from './pages/FacultyPage';
 import TeacherPage from './pages/TeacherPage';
 import GroupPage from './pages/GroupPage';
 import DepartmentPage from './pages/DepartmentPage';
+import LoginPage from './pages/LoginPage';
+
 
 function App() {
   return (
     <Router>
       <Layout>
         <Routes>
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<SchedulePage />} />
           <Route path="/schedule" element={<SchedulePage />} />
           <Route path="/classrooms" element={<ClassroomPage />} />

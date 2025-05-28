@@ -2,14 +2,46 @@ import axios from 'axios';
 
 const BASE_URL = 'http://localhost:8080';
 
-// Создаем единый экземпляр axios с настройками
 const apiClient = axios.create({
   baseURL: BASE_URL,
-  withCredentials: true, // Важно для CORS и кук
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+apiClient.interceptors.request.use(config => {
+  const token = localStorage.getItem('token');
+  console.log('Отправляем токен:', token ? `Bearer ${token}` : 'нет токена');
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+}, error => {
+  return Promise.reject(error);
+});
+
+/**
+ * Проверяет токен и сохраняет его, если он валиден
+ */
+export async function checkAndStoreToken(rawToken) {
+  const token = `Bearer ${rawToken}`;
+  try {
+    const response = await axios.get(`${BASE_URL}/auth/check`, {
+      headers: {
+        'Authorization': token
+      }
+    });
+    console.log('Токен валиден');
+    localStorage.setItem('token', rawToken);
+    return true;
+  } catch (error) {
+    console.error('Неверный токен:', error.response?.data || error.message);
+    return false;
+  }
+}
+
+
 
 // Функции для работы с Classroom
 export const getClassroomById = (id) => apiClient.get(`/classrooms/${id}`);
