@@ -18,9 +18,9 @@ const ClassroomPage = () => {
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Проверяем наличие токена для отображения кнопки удаления
+  // Проверяем наличие токена для отображения элементов управления
   const token = localStorage.getItem('token');
-  const canDelete = !!token;
+  const isAuthenticated = !!token;
 
   const showError = (message) => {
     setError(message);
@@ -49,6 +49,8 @@ const ClassroomPage = () => {
   }, [page, size]);
 
   const handleCreateClassroom = async () => {
+    if (!isAuthenticated) return;
+
     try {
       setLoading(true);
       await createClassroom(classroom);
@@ -78,6 +80,8 @@ const ClassroomPage = () => {
   };
 
   const handleDeleteClassroom = async (id) => {
+    if (!isAuthenticated) return;
+
     if (!window.confirm('Вы уверены, что хотите удалить эту аудиторию?')) {
       return;
     }
@@ -100,20 +104,23 @@ const ClassroomPage = () => {
 
   return (
     <div className="classroom-management">
-      {error && (
+      {/* Уведомления */}
+      {error && isAuthenticated && (
         <div className="alert alert-danger alert-dismissible fade show position-fixed top-0 end-0 m-3" role="alert">
           <i className="fas fa-exclamation-circle me-2"></i>
           {error}
           <button type="button" className="btn-close" onClick={() => setError(null)}></button>
         </div>
       )}
-      {success && (
+      {success && isAuthenticated && (
         <div className="alert alert-success alert-dismissible fade show position-fixed top-0 end-0 m-3" role="alert">
           <i className="fas fa-check-circle me-2"></i>
           {success}
           <button type="button" className="btn-close" onClick={() => setSuccess(null)}></button>
         </div>
       )}
+
+      {/* Индикатор загрузки */}
       {loading && (
         <div className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style={{ zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.1)' }}>
           <div className="spinner-border text-primary" role="status">
@@ -121,6 +128,7 @@ const ClassroomPage = () => {
           </div>
         </div>
       )}
+
       <main className="container py-4">
         <div className="page-header mb-4">
           <h1 className="display-5 fw-bold">
@@ -129,54 +137,60 @@ const ClassroomPage = () => {
           </h1>
           <p className="lead">Создание и редактирование учебных аудиторий</p>
         </div>
+
         <div className="row g-4">
-          <div className="col-lg-6">
-            <div className="card shadow-sm">
-              <div className="card-header bg-primary text-white">
-                <h3 className="h5 mb-0">
-                  <i className="fas fa-plus-circle me-2"></i>
-                  Создать новую аудиторию
-                </h3>
-              </div>
-              <div className="card-body">
-                <div className="mb-3">
-                  <label className="form-label">Название аудитории</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Например, 101 или A-12"
-                    value={classroom.name}
-                    onChange={(e) => setClassroom({ ...classroom, name: e.target.value })}
-                  />
+          {/* Форма создания новой аудитории */}
+          {isAuthenticated && (
+            <div className="col-lg-6">
+              <div className="card shadow-sm">
+                <div className="card-header bg-primary text-white">
+                  <h3 className="h5 mb-0">
+                    <i className="fas fa-plus-circle me-2"></i>
+                    Создать новую аудиторию
+                  </h3>
                 </div>
-                <div className="mb-3">
-                  <label className="form-label">Тип аудитории</label>
-                  <select
-                    className="form-select"
-                    value={classroom.type}
-                    onChange={(e) => setClassroom({ ...classroom, type: e.target.value })}
+                <div className="card-body">
+                  <div className="mb-3">
+                    <label className="form-label">Название аудитории</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Например, 101 или A-12"
+                      value={classroom.name}
+                      onChange={(e) => setClassroom({ ...classroom, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Тип аудитории</label>
+                    <select
+                      className="form-select"
+                      value={classroom.type}
+                      onChange={(e) => setClassroom({ ...classroom, type: e.target.value })}
+                    >
+                      <option value="">Выберите тип</option>
+                      <option value="LAB">Лаборатория</option>
+                      <option value="LECTURE">Лекционная</option>
+                    </select>
+                  </div>
+                  <button 
+                    className="btn btn-primary w-100"
+                    onClick={handleCreateClassroom}
+                    disabled={!classroom.name || !classroom.type || loading}
                   >
-                    <option value="">Выберите тип</option>
-                    <option value="LAB">Лаборатория</option>
-                    <option value="LECTURE">Лекционная</option>
-                  </select>
+                    {loading ? (
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    ) : (
+                      <i className="fas fa-save me-2"></i>
+                    )}
+                    Создать аудиторию
+                  </button>
                 </div>
-                <button 
-                  className="btn btn-primary w-100"
-                  onClick={handleCreateClassroom}
-                  disabled={!classroom.name || !classroom.type || loading}
-                >
-                  {loading ? (
-                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                  ) : (
-                    <i className="fas fa-save me-2"></i>
-                  )}
-                  Создать аудиторию
-                </button>
               </div>
             </div>
-          </div>
-          <div className="col-lg-6">
+          )}
+
+          {/* Поиск аудитории */}
+          <div className={`${isAuthenticated ? 'col-lg-6' : 'col-12'}`}>
             <div className="card shadow-sm">
               <div className="card-header bg-primary text-white">
                 <h3 className="h5 mb-0">
@@ -230,6 +244,8 @@ const ClassroomPage = () => {
               </div>
             </div>
           </div>
+
+          {/* Список аудиторий */}
           <div className="col-12">
             <div className="card shadow-sm">
               <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
@@ -255,7 +271,7 @@ const ClassroomPage = () => {
                           <th width="100">ID</th>
                           <th>Название</th>
                           <th width="200">Тип</th>
-                          <th width="120">Действия</th>
+                          {isAuthenticated && <th width="120">Действия</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -268,8 +284,8 @@ const ClassroomPage = () => {
                                 {room.type === 'LAB' ? 'Лаборатория' : 'Лекционная'}
                               </span>
                             </td>
-                            <td>
-                              {canDelete && (
+                            {isAuthenticated && (
+                              <td>
                                 <button
                                   className="btn btn-sm btn-outline-danger"
                                   disabled={loading}
@@ -277,8 +293,8 @@ const ClassroomPage = () => {
                                 >
                                   <i className="fas fa-trash"></i>
                                 </button>
-                              )}
-                            </td>
+                              </td>
+                            )}
                           </tr>
                         ))}
                       </tbody>

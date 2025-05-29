@@ -11,7 +11,6 @@ import {
   getAllDisciplines,
   downloadSchedulePdf,
   getAllClassrooms,
-  getClassroomById
 } from '../api/apiClient';
 import CustomDropdown from '../components/CustomDropdown';
 
@@ -25,6 +24,7 @@ const SchedulePage = () => {
     SATURDAY: 'Суббота',
     SUNDAY: 'Воскресенье',
   };
+
   const daysOfWeekRu = [
     { value: 'MONDAY', label: 'Понедельник' },
     { value: 'TUESDAY', label: 'Вторник' },
@@ -34,6 +34,11 @@ const SchedulePage = () => {
     { value: 'SATURDAY', label: 'Суббота' },
     { value: 'SUNDAY', label: 'Воскресенье' },
   ];
+
+  // Проверяем наличие токена для отображения элементов управления
+  const token = localStorage.getItem('token');
+  const isAuthenticated = !!token;
+
   const [schedule, setSchedule] = useState({
     pairNumber: null,
     weekNumber: null,
@@ -44,6 +49,7 @@ const SchedulePage = () => {
     disciplineName: '',
     classroomName: '',
   });
+
   const [scheduleId, setScheduleId] = useState('');
   const [fetchedSchedule, setFetchedSchedule] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -54,7 +60,8 @@ const SchedulePage = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [selectedGroup, setSelectedGroup] = useState('');
   const [selectedTeacher, setSelectedTeacher] = useState('');
-  const [activeTab, setActiveTab] = useState('create');
+  const [activeTab, setActiveTab] = useState('group');
+
   const pairNumbers = Array.from({ length: 8 }, (_, i) => i + 1);
   const daysOfWeek = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
   const weekNumbers = [1, 2];
@@ -101,14 +108,18 @@ const SchedulePage = () => {
   };
 
   const handleCreateSchedule = async () => {
+    if (!isAuthenticated) return;
+
     try {
       const selectedTeacherId = teachers.find((teacher) => teacher.lastName === schedule.teacherName)?.id;
       const selectedDisciplineId = disciplines.find((discipline) => discipline.name === schedule.disciplineName)?.id;
       const selectedClassroomId = classrooms.find((classroom) => classroom.name === schedule.classroomName)?.id;
+
       if (!schedule.groupIds.length || !selectedTeacherId || !selectedDisciplineId) {
-        alert('Выберите хотя бы одну группу, преподавателя и дисциплину, аудиторию.');
+        alert('Выберите хотя бы одну группу, преподавателя и дисциплину.');
         return;
       }
+
       const newSchedule = {
         ...schedule,
         groupIds: schedule.groupIds,
@@ -119,6 +130,7 @@ const SchedulePage = () => {
         weekNumber: schedule.weekNumber ?? null,
         dayOfWeek: schedule.dayOfWeek || null,
       };
+
       await createSchedule(newSchedule);
       alert('Расписание успешно создано!');
       setSchedule({
@@ -137,14 +149,18 @@ const SchedulePage = () => {
   };
 
   const handleUpdateSchedule = async () => {
+    if (!isAuthenticated) return;
+
     try {
       const selectedTeacherId = teachers.find((teacher) => teacher.lastName === schedule.teacherName)?.id;
       const selectedDisciplineId = disciplines.find((discipline) => discipline.name === schedule.disciplineName)?.id;
       const selectedClassroomId = classrooms.find((classroom) => classroom.name === schedule.classroomName)?.id;
+
       if (!schedule.groupIds.length || !selectedTeacherId || !selectedDisciplineId) {
         alert('Выберите хотя бы одну группу, преподавателя и дисциплину.');
         return;
       }
+
       const updatedSchedule = {
         ...schedule,
         groupIds: schedule.groupIds,
@@ -155,8 +171,10 @@ const SchedulePage = () => {
         weekNumber: schedule.weekNumber ?? null,
         dayOfWeek: schedule.dayOfWeek || null,
       };
+
       await updateSchedule(scheduleId, updatedSchedule);
       alert('Расписание успешно обновлено!');
+
       if (selectedGroup) {
         handleGetScheduleByGroupId();
       } else if (selectedTeacher) {
@@ -168,6 +186,8 @@ const SchedulePage = () => {
   };
 
   const handleDeleteSchedule = async (id) => {
+    if (!isAuthenticated) return;
+
     if (window.confirm('Вы уверены, что хотите удалить это расписание?')) {
       try {
         await deleteSchedule(id);
@@ -212,6 +232,8 @@ const SchedulePage = () => {
   };
 
   const handleDownloadPdf = async () => {
+    if (!isAuthenticated) return;
+
     try {
       const selectedGroupId = groups.find((group) => group.name === selectedGroup)?.id;
       if (!selectedGroupId) {
@@ -232,6 +254,8 @@ const SchedulePage = () => {
   };
 
   const handleAutoGenerate = async () => {
+    if (!isAuthenticated) return;
+
     try {
       await autoGenerate();
       alert('Расписание успешно сгенерировано!');
@@ -260,31 +284,39 @@ const SchedulePage = () => {
         </h1>
         <p className="lead">Создание и редактирование учебных аудиторий</p>
       </div>
+
       <div className="row">
-        <div className="col-md-4 mb-4">
-          <div className="card">
-            <div className="card-header d-flex justify-content-between align-items-center">
-              <span>Быстрые действия</span>
-              <i className="fas fa-bolt"></i>
-            </div>
-            <div className="card-body">
-              <button
-                className="btn btn-success w-100 mb-3"
-                onClick={handleAutoGenerate}
-              >
-                <i className="fas fa-magic me-2"></i>
-                Сгенерировать расписание
-              </button>
-              <button
-                className="btn btn-primary w-100"
-                onClick={handleDownloadPdf}
-                disabled={!selectedGroup}
-              >
-                <i className="fas fa-file-pdf me-2"></i>
-                Скачать PDF
-              </button>
+        {/* Быстрые действия */}
+        {isAuthenticated && (
+          <div className="col-md-4 mb-4">
+            <div className="card">
+              <div className="card-header d-flex justify-content-between align-items-center">
+                <span>Быстрые действия</span>
+                <i className="fas fa-bolt"></i>
+              </div>
+              <div className="card-body">
+                <button
+                  className="btn btn-success w-100 mb-3"
+                  onClick={handleAutoGenerate}
+                >
+                  <i className="fas fa-magic me-2"></i>
+                  Сгенерировать расписание
+                </button>
+                <button
+                  className="btn btn-primary w-100"
+                  onClick={handleDownloadPdf}
+                  disabled={!selectedGroup}
+                >
+                  <i className="fas fa-file-pdf me-2"></i>
+                  Скачать PDF
+                </button>
+              </div>
             </div>
           </div>
+        )}
+
+        {/* Поиск расписания */}
+        <div className={`${isAuthenticated ? 'col-md-8' : 'col-12'}`}>
           <div className="card">
             <div className="card-header">
               <span>Поиск расписания</span>
@@ -365,147 +397,159 @@ const SchedulePage = () => {
             </div>
           </div>
         </div>
-        <div className="col-md-8">
-          <div className="card">
-            <div className="card-header">
-              <span>Создание/редактирование расписания</span>
-            </div>
-            <div className="card-body">
-              <div className="row g-3">
-                <div className="col-md-6">
-                  <label className="form-label">Номер пары:</label>
-                  <select
-                    className="form-select"
-                    value={schedule.pairNumber || ''}
-                    onChange={(e) =>
-                      setSchedule({ ...schedule, pairNumber: e.target.value ? parseInt(e.target.value) : null })
-                    }
-                  >
-                    <option value="">-- Не указано --</option>
-                    {pairNumbers.map((number) => (
-                      <option key={number} value={number}>{number}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label">Номер недели:</label>
-                  <select
-                    className="form-select"
-                    value={schedule.weekNumber || ''}
-                    onChange={(e) =>
-                      setSchedule({ ...schedule, weekNumber: e.target.value ? parseInt(e.target.value) : null })
-                    }
-                  >
-                    <option value="">-- Не указано --</option>
-                    {weekNumbers.map((number) => (
-                      <option key={number} value={number}>{number}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label">День недели:</label>
-                  <select
-                    className="form-select"
-                    value={schedule.dayOfWeek || ''}
-                    onChange={(e) =>
-                      setSchedule({ ...schedule, dayOfWeek: e.target.value || '' })
-                    }
-                  >
-                    <option value="">-- Не указано --</option>
-                    {daysOfWeekRu.map((day) => (
-                      <option key={day.value} value={day.value}>{day.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label">Аудитория:</label>
-                  <CustomDropdown
-                    items={classrooms}
-                    selectedItem={schedule.classroomName}
-                    onItemSelect={(name) => setSchedule({ ...schedule, classroomName: name })}
-                    totalPages={totalPages}
-                    currentPage={currentPage}
-                    onPageChange={(direction) => {
-                      if (direction === 'prev') handlePrevPage();
-                      else handleNextPage();
-                    }}
-                  />
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label">Группы:</label>
-                  <select
-                    className="form-select"
-                    multiple
-                    size="3"
-                    value={schedule.groupIds}
-                    onChange={(e) => {
-                      const selectedOptions = Array.from(e.target.selectedOptions, (option) => option.value);
-                      setSchedule({ ...schedule, groupIds: selectedOptions });
-                    }}
-                  >
-                    {groups.map((group) => (
-                      <option key={group.id} value={group.id}>
-                        {group.name}
-                      </option>
-                    ))}
-                  </select>
-                  <small className="text-muted">Для выбора нескольких групп удерживайте Ctrl</small>
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label">Преподаватель:</label>
-                  <select
-                    className="form-select"
-                    value={schedule.teacherName}
-                    onChange={(e) =>
-                      setSchedule({ ...schedule, teacherName: e.target.value })
-                    }
-                  >
-                    <option value="">-- Выберите преподавателя --</option>
-                    {teachers.map((teacher) => (
-                      <option key={teacher.id} value={teacher.lastName}>
-                        {teacher.lastName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-12">
-                  <label className="form-label">Дисциплина:</label>
-                  <select
-                    className="form-select"
-                    value={schedule.disciplineName}
-                    onChange={(e) =>
-                      setSchedule({ ...schedule, disciplineName: e.target.value })
-                    }
-                  >
-                    <option value="">-- Выберите дисциплину --</option>
-                    {disciplines.map((discipline) => (
-                      <option key={discipline.id} value={discipline.name}>
-                        {discipline.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-12 d-flex justify-content-between">
-                  <button
-                    className="btn btn-primary"
-                    onClick={handleCreateSchedule}
-                  >
-                    <i className="fas fa-plus me-2"></i>
-                    Создать
-                  </button>
-                  <button
-                    className="btn btn-warning"
-                    onClick={handleUpdateSchedule}
-                  >
-                    <i className="fas fa-edit me-2"></i>
-                    Обновить
-                  </button>
+      </div>
+
+      {/* Создание/редактирование расписания */}
+      {isAuthenticated && (
+        <div className="row mt-4">
+          <div className="col-md-12">
+            <div className="card">
+              <div className="card-header">
+                <span>Создание/редактирование расписания</span>
+              </div>
+              <div className="card-body">
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label">Номер пары:</label>
+                    <select
+                      className="form-select"
+                      value={schedule.pairNumber || ''}
+                      onChange={(e) =>
+                        setSchedule({ ...schedule, pairNumber: e.target.value ? parseInt(e.target.value) : null })
+                      }
+                    >
+                      <option value="">-- Не указано --</option>
+                      {pairNumbers.map((number) => (
+                        <option key={number} value={number}>{number}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">Номер недели:</label>
+                    <select
+                      className="form-select"
+                      value={schedule.weekNumber || ''}
+                      onChange={(e) =>
+                        setSchedule({ ...schedule, weekNumber: e.target.value ? parseInt(e.target.value) : null })
+                      }
+                    >
+                      <option value="">-- Не указано --</option>
+                      {weekNumbers.map((number) => (
+                        <option key={number} value={number}>{number}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">День недели:</label>
+                    <select
+                      className="form-select"
+                      value={schedule.dayOfWeek || ''}
+                      onChange={(e) =>
+                        setSchedule({ ...schedule, dayOfWeek: e.target.value || '' })
+                      }
+                    >
+                      <option value="">-- Не указано --</option>
+                      {daysOfWeekRu.map((day) => (
+                        <option key={day.value} value={day.value}>{day.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">Аудитория:</label>
+                    <CustomDropdown
+                      items={classrooms}
+                      selectedItem={schedule.classroomName}
+                      onItemSelect={(name) => setSchedule({ ...schedule, classroomName: name })}
+                      totalPages={totalPages}
+                      currentPage={currentPage}
+                      onPageChange={(direction) => {
+                        if (direction === 'prev') handlePrevPage();
+                        else handleNextPage();
+                      }}
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">Группы:</label>
+                    <select
+                      className="form-select"
+                      multiple
+                      size="3"
+                      value={schedule.groupIds}
+                      onChange={(e) => {
+                        const selectedOptions = Array.from(e.target.selectedOptions, (option) => option.value);
+                        setSchedule({ ...schedule, groupIds: selectedOptions });
+                      }}
+                    >
+                      {groups.map((group) => (
+                        <option key={group.id} value={group.id}>
+                          {group.name}
+                        </option>
+                      ))}
+                    </select>
+                    <small className="text-muted">Для выбора нескольких групп удерживайте Ctrl</small>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">Преподаватель:</label>
+                    <select
+                      className="form-select"
+                      value={schedule.teacherName}
+                      onChange={(e) =>
+                        setSchedule({ ...schedule, teacherName: e.target.value })
+                      }
+                    >
+                      <option value="">-- Выберите преподавателя --</option>
+                      {teachers.map((teacher) => (
+                        <option key={teacher.id} value={teacher.lastName}>
+                          {teacher.lastName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label">Дисциплина:</label>
+                    <select
+                      className="form-select"
+                      value={schedule.disciplineName}
+                      onChange={(e) =>
+                        setSchedule({ ...schedule, disciplineName: e.target.value })
+                      }
+                    >
+                      <option value="">-- Выберите дисциплину --</option>
+                      {disciplines.map((discipline) => (
+                        <option key={discipline.id} value={discipline.name}>
+                          {discipline.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-12 d-flex justify-content-between">
+                    <button
+                      className="btn btn-primary"
+                      onClick={handleCreateSchedule}
+                    >
+                      <i className="fas fa-plus me-2"></i>
+                      Создать
+                    </button>
+                    <button
+                      className="btn btn-warning"
+                      onClick={handleUpdateSchedule}
+                    >
+                      <i className="fas fa-edit me-2"></i>
+                      Обновить
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          {fetchedSchedule.length > 0 && (
-            <div className="card mt-4">
+        </div>
+      )}
+
+      {/* Результаты поиска */}
+      {fetchedSchedule.length > 0 && (
+        <div className="row mt-4">
+          <div className="col-12">
+            <div className="card">
               <div className="card-header d-flex justify-content-between align-items-center">
                 <span>Результаты поиска</span>
                 <span className="badge bg-primary">{fetchedSchedule.length} записей</span>
@@ -520,56 +564,49 @@ const SchedulePage = () => {
                           <span className="badge bg-secondary me-2">{dayOfWeekLabels[item.dayOfWeek]}</span>
                           <span className="badge bg-info me-2">Неделя {item.weekNumber}</span>
                           <span className="badge bg-success me-2">{item.classroomName}</span>
+                          <span className="badge bg-primary me-2">{item.teacherName}</span>
                           <strong>{item.disciplineName}</strong>
                           <div className="mt-2">
                             <small className="text-muted">Группы: {item.groupNames}</small>
                           </div>
                         </div>
-                        <button
-                          className="btn btn-sm btn-outline-primary me-2"
-                          onClick={() => {
-                            try {
-                              console.log('item.classroomId:', item.classroomId);
-                              console.log('item.classroomName:', item.classroomName); // 👈 если есть в API
-
-                              const classroomName = item.classroomName || ''; // ✅ Берём напрямую из объекта
-
-                              setSchedule({
-                                pairNumber: item.pairNumber,
-                                weekNumber: item.weekNumber,
-                                dayOfWeek: item.dayOfWeek,
-                                groupIds: item.groupIds,
-                                teacherName: teachers.find(t => t.id === item.teacherId)?.lastName || '',
-                                disciplineName: disciplines.find(d => d.id === item.disciplineId)?.name || '',
-                                classroomName: classroomName, // ✅ Устанавливаем напрямую
-                              });
-
-                              setScheduleId(item.id);
-                              setActiveTab('edit');
-
-                            } catch (error) {
-                              console.error('Ошибка при загрузке данных:', error);
-                              alert('Не удалось загрузить данные для редактирования.');
-                            }
-                          }}
-                        >
-                          <i className="fas fa-edit"></i>
-                        </button>
-                        <button
-                          className="btn btn-sm btn-danger"
-                          onClick={() => handleDeleteSchedule(item.id)}
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>
+                        {isAuthenticated && (
+                          <>
+                            <button
+                              className="btn btn-sm btn-outline-primary me-2"
+                              onClick={() => {
+                                const classroomName = item.classroomName || '';
+                                setSchedule({
+                                  pairNumber: item.pairNumber,
+                                  weekNumber: item.weekNumber,
+                                  dayOfWeek: item.dayOfWeek,
+                                  groupIds: item.groupIds,
+                                  teacherName: teachers.find(t => t.id === item.teacherId)?.lastName || '',
+                                  disciplineName: disciplines.find(d => d.id === item.disciplineId)?.name || '',
+                                  classroomName: classroomName,
+                                });
+                                setScheduleId(item.id);
+                              }}
+                            >
+                              <i className="fas fa-edit"></i>
+                            </button>
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleDeleteSchedule(item.id)}
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

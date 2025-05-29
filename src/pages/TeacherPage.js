@@ -15,6 +15,10 @@ const TeacherPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Проверяем наличие токена для отображения элементов управления
+  const token = localStorage.getItem('token');
+  const isAuthenticated = !!token;
+
   useEffect(() => {
     loadData();
   }, []);
@@ -34,6 +38,8 @@ const TeacherPage = () => {
   };
 
   const handleSubmit = async (e) => {
+    if (!isAuthenticated) return;
+
     e.preventDefault();
     try {
       if (form.id) {
@@ -55,33 +61,36 @@ const TeacherPage = () => {
   };
 
   const handleEdit = (teacher) => {
+    if (!isAuthenticated) return;
     setForm({
       id: teacher.id,
       firstName: teacher.firstName,
       lastName: teacher.lastName,
       departmentId: teacher.departmentId,
-      time_limit: teacher.time_limit || 0 // Устанавливаем текущее значение
+      time_limit: teacher.time_limit || 0
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Вы уверены?')) {
-      try {
-        console.log('Пытаюсь удалить элемент с ID:', id); // Логируем ID
-        const response = await deleteTeacher(id);
-        console.log('Ответ сервера:', response); // Логируем полный ответ
-        setTeachers(prev => prev.filter(t => t.id !== id));
-      } catch (error) {
-        console.error('Полная ошибка удаления:', {
-          message: error.message,
-          response: error.response,
-          stack: error.stack
-        });
-      }
+    if (!isAuthenticated || !window.confirm('Вы уверены?')) {
+      return;
+    }
+
+    try {
+      console.log('Пытаюсь удалить элемент с ID:', id); // Логируем ID
+      const response = await deleteTeacher(id);
+      console.log('Ответ сервера:', response); // Логируем полный ответ
+      setTeachers(prev => prev.filter(t => t.id !== id));
+    } catch (error) {
+      console.error('Полная ошибка удаления:', {
+        message: error.message,
+        response: error.response,
+        stack: error.stack
+      });
     }
   };
-  
+
   const filteredTeachers = teachers.filter(teacher => {
     const fullName = `${teacher.lastName} ${teacher.firstName}`.toLowerCase();
     const department = departments.find(d => d.id === teacher.departmentId)?.name || '';
@@ -100,72 +109,70 @@ const TeacherPage = () => {
             Управление преподавателями
           </h2>
         </div>
-        
         <div className="card-body">
-          {/* Форма добавления/редактирования */}
-          <form onSubmit={handleSubmit} className="mb-4">
-            <div className="row g-3">
-              <div className="col-md-3">
-                <label className="form-label">Фамилия</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Введите фамилию"
-                  value={form.lastName}
-                  onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                  required
-                />
-              </div>
-              
-              <div className="col-md-3">
-                <label className="form-label">Имя</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Введите имя"
-                  value={form.firstName}
-                  onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                  required
-                />
-              </div>
-              
-              <div className="col-md-3">
-                <label className="form-label">Кафедра</label>
-                <select
-                  className="form-select"
-                  value={form.departmentId}
-                  onChange={e => setForm({ ...form, departmentId: e.target.value })}
-                  required
-                >
-                  <option value="">Выберите кафедру</option>
-                  {departments.map(d => 
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  )}
-                </select>
-              </div>
 
-              <div className="col-md-2">
-                <label className="form-label">Лимит часов</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  placeholder="Часы"
-                  min="0"
-                  value={form.time_limit}
-                  onChange={(e) => setForm({ ...form, time_limit: parseInt(e.target.value) || 0 })}
-                />
+          {/* Форма добавления/редактирования */}
+          {isAuthenticated && (
+            <form onSubmit={handleSubmit} className="mb-4">
+              <div className="row g-3">
+                <div className="col-md-3">
+                  <label className="form-label">Фамилия</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Введите фамилию"
+                    value={form.lastName}
+                    onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="col-md-3">
+                  <label className="form-label">Имя</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Введите имя"
+                    value={form.firstName}
+                    onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="col-md-3">
+                  <label className="form-label">Кафедра</label>
+                  <select
+                    className="form-select"
+                    value={form.departmentId}
+                    onChange={e => setForm({ ...form, departmentId: e.target.value })}
+                    required
+                  >
+                    <option value="">Выберите кафедру</option>
+                    {departments.map(d => 
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    )}
+                  </select>
+                </div>
+                <div className="col-md-2">
+                  <label className="form-label">Лимит часов</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    placeholder="Часы"
+                    min="0"
+                    value={form.time_limit}
+                    onChange={(e) => setForm({ ...form, time_limit: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="col-md-1 d-flex align-items-end">
+                  <button 
+                    type="submit" 
+                    className={`btn w-100 ${form.id ? 'btn-warning' : 'btn-success'}`}
+                  >
+                    <i className={`fas ${form.id ? 'fa-sync' : 'fa-plus'}`}></i>
+                  </button>
+                </div>
               </div>
-              
-              <div className="col-md-1 d-flex align-items-end">
-                <button 
-                  type="submit" 
-                  className={`btn w-100 ${form.id ? 'btn-warning' : 'btn-success'}`}
-                >
-                  <i className={`fas ${form.id ? 'fa-sync' : 'fa-plus'}`}></i>
-                </button>
-              </div>
-            </div>
-          </form>
+            </form>
+          )}
 
           {/* Поиск */}
           <div className="mb-3">
@@ -208,7 +215,7 @@ const TeacherPage = () => {
                     <th>Преподаватель</th>
                     <th>Кафедра</th>
                     <th>Лимит часов</th>
-                    <th width="120" className="text-end">Действия</th>
+                    {isAuthenticated && <th width="120" className="text-end">Действия</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -243,28 +250,30 @@ const TeacherPage = () => {
                               {teacher.time_limit || 'Не задан'}
                             </span>
                           </td>
-                          <td className="text-end">
-                            <button 
-                              onClick={() => handleEdit(teacher)}
-                              className="btn btn-sm btn-outline-primary me-2"
-                              title="Редактировать"
-                            >
-                              <i className="fas fa-edit"></i>
-                            </button>
-                            <button 
-                              onClick={() => handleDelete(teacher.id)}
-                              className="btn btn-sm btn-outline-danger"
-                              title="Удалить"
-                            >
-                              <i className="fas fa-trash-alt"></i>
-                            </button>
-                          </td>
+                          {isAuthenticated && (
+                            <td className="text-end">
+                              <button 
+                                onClick={() => handleEdit(teacher)}
+                                className="btn btn-sm btn-outline-primary me-2"
+                                title="Редактировать"
+                              >
+                                <i className="fas fa-edit"></i>
+                              </button>
+                              <button 
+                                onClick={() => handleDelete(teacher.id)}
+                                className="btn btn-sm btn-outline-danger"
+                                title="Удалить"
+                              >
+                                <i className="fas fa-trash-alt"></i>
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       );
                     })
                   ) : (
                     <tr>
-                      <td colSpan="5" className="text-center py-4 text-muted">
+                      <td colSpan={isAuthenticated ? "5" : "4"} className="text-center py-4 text-muted">
                         {searchTerm ? 'Ничего не найдено' : 'Список преподавателей пуст'}
                       </td>
                     </tr>
@@ -273,8 +282,9 @@ const TeacherPage = () => {
               </table>
             </div>
           )}
+
         </div>
-        
+
         <div className="card-footer bg-light">
           <div className="d-flex justify-content-between align-items-center">
             <small className="text-muted">

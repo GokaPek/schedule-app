@@ -7,8 +7,12 @@ const FacultyPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => { 
-    loadFaculties(); 
+  // Проверяем наличие токена для отображения элементов управления
+  const token = localStorage.getItem('token');
+  const isAuthenticated = !!token;
+
+  useEffect(() => {
+    loadFaculties();
   }, []);
 
   const loadFaculties = async () => {
@@ -22,6 +26,8 @@ const FacultyPage = () => {
   };
 
   const handleSubmit = async (e) => {
+    if (!isAuthenticated) return;
+
     e.preventDefault();
     try {
       if (form.id) {
@@ -36,16 +42,21 @@ const FacultyPage = () => {
     }
   };
 
-  const handleEdit = (faculty) => setForm(faculty);
-  
+  const handleEdit = (faculty) => {
+    if (!isAuthenticated) return;
+    setForm(faculty);
+  };
+
   const handleDelete = async (id) => {
-    if (window.confirm('Вы уверены, что хотите удалить этот факультет?')) {
-      try {
-        await deleteFaculty(id);
-        await loadFaculties();
-      } catch (error) {
-        console.error('Ошибка при удалении:', error);
-      }
+    if (!isAuthenticated || !window.confirm('Вы уверены, что хотите удалить этот факультет?')) {
+      return;
+    }
+
+    try {
+      await deleteFaculty(id);
+      await loadFaculties();
+    } catch (error) {
+      console.error('Ошибка при удалении:', error);
     }
   };
 
@@ -62,34 +73,36 @@ const FacultyPage = () => {
             Управление факультетами
           </h2>
         </div>
-        
+
         <div className="card-body">
           {/* Форма добавления/редактирования */}
-          <form onSubmit={handleSubmit} className="mb-4">
-            <div className="row g-3 align-items-end">
-              <div className="col-md-8">
-                <label htmlFor="facultyName" className="form-label">Название факультета</label>
-                <input
-                  id="facultyName"
-                  type="text"
-                  className="form-control"
-                  placeholder="Введите название факультета"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  required
-                />
+          {isAuthenticated && (
+            <form onSubmit={handleSubmit} className="mb-4">
+              <div className="row g-3 align-items-end">
+                <div className="col-md-8">
+                  <label htmlFor="facultyName" className="form-label">Название факультета</label>
+                  <input
+                    id="facultyName"
+                    type="text"
+                    className="form-control"
+                    placeholder="Введите название факультета"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="col-md-4">
+                  <button 
+                    type="submit" 
+                    className={`btn w-100 ${form.id ? 'btn-warning' : 'btn-success'}`}
+                  >
+                    <i className={`fas ${form.id ? 'fa-sync' : 'fa-plus'} me-2`}></i>
+                    {form.id ? 'Обновить' : 'Добавить'}
+                  </button>
+                </div>
               </div>
-              <div className="col-md-4">
-                <button 
-                  type="submit" 
-                  className={`btn w-100 ${form.id ? 'btn-warning' : 'btn-success'}`}
-                >
-                  <i className={`fas ${form.id ? 'fa-sync' : 'fa-plus'} me-2`}></i>
-                  {form.id ? 'Обновить' : 'Добавить'}
-                </button>
-              </div>
-            </div>
-          </form>
+            </form>
+          )}
 
           {/* Поиск */}
           <div className="mb-3">
@@ -121,7 +134,7 @@ const FacultyPage = () => {
                   <tr>
                     <th width="50">ID</th>
                     <th>Название</th>
-                    <th width="120" className="text-end">Действия</th>
+                    {isAuthenticated && <th width="120" className="text-end">Действия</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -135,27 +148,29 @@ const FacultyPage = () => {
                             {faculty.name}
                           </span>
                         </td>
-                        <td className="text-end">
-                          <button 
-                            onClick={() => handleEdit(faculty)}
-                            className="btn btn-sm btn-outline-primary me-2"
-                            title="Редактировать"
-                          >
-                            <i className="fas fa-edit"></i>
-                          </button>
-                          <button 
-                            onClick={() => handleDelete(faculty.id)}
-                            className="btn btn-sm btn-outline-danger"
-                            title="Удалить"
-                          >
-                            <i className="fas fa-trash-alt"></i>
-                          </button>
-                        </td>
+                        {isAuthenticated && (
+                          <td className="text-end">
+                            <button 
+                              onClick={() => handleEdit(faculty)}
+                              className="btn btn-sm btn-outline-primary me-2"
+                              title="Редактировать"
+                            >
+                              <i className="fas fa-edit"></i>
+                            </button>
+                            <button 
+                              onClick={() => handleDelete(faculty.id)}
+                              className="btn btn-sm btn-outline-danger"
+                              title="Удалить"
+                            >
+                              <i className="fas fa-trash-alt"></i>
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="3" className="text-center py-4 text-muted">
+                      <td colSpan={isAuthenticated ? "3" : "2"} className="text-center py-4 text-muted">
                         {searchTerm ? 'Ничего не найдено' : 'Список факультетов пуст'}
                       </td>
                     </tr>
@@ -165,7 +180,7 @@ const FacultyPage = () => {
             </div>
           )}
         </div>
-        
+
         <div className="card-footer bg-light">
           <div className="d-flex justify-content-between align-items-center">
             <small className="text-muted">

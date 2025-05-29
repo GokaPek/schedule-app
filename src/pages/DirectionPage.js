@@ -14,6 +14,10 @@ const DirectionPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Проверяем наличие токена для отображения элементов управления
+  const token = localStorage.getItem('token');
+  const isAuthenticated = !!token;
+
   useEffect(() => {
     loadData();
   }, []);
@@ -33,6 +37,8 @@ const DirectionPage = () => {
   };
 
   const handleSubmit = async (e) => {
+    if (!isAuthenticated) return;
+
     e.preventDefault();
     try {
       if (form.id) {
@@ -48,18 +54,21 @@ const DirectionPage = () => {
   };
 
   const handleEdit = (direction) => {
+    if (!isAuthenticated) return;
     setForm(direction);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Вы уверены, что хотите удалить это направление?')) {
-      try {
-        await deleteDirection(id);
-        await loadData();
-      } catch (error) {
-        console.error('Ошибка при удалении:', error);
-      }
+    if (!isAuthenticated || !window.confirm('Вы уверены, что хотите удалить это направление?')) {
+      return;
+    }
+
+    try {
+      await deleteDirection(id);
+      await loadData();
+    } catch (error) {
+      console.error('Ошибка при удалении:', error);
     }
   };
 
@@ -81,51 +90,53 @@ const DirectionPage = () => {
             Управление направлениями подготовки
           </h2>
         </div>
-        
+
         <div className="card-body">
           {/* Форма добавления/редактирования */}
-          <form onSubmit={handleSubmit} className="mb-4">
-            <div className="row g-3 align-items-end">
-              <div className="col-md-6">
-                <label className="form-label">Название направления</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Например, Информатика и вычислительная техника"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  required
-                />
+          {isAuthenticated && (
+            <form onSubmit={handleSubmit} className="mb-4">
+              <div className="row g-3 align-items-end">
+                <div className="col-md-6">
+                  <label className="form-label">Название направления</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Например, Информатика и вычислительная техника"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="col-md-4">
+                  <label className="form-label">Кафедра</label>
+                  <select
+                    className="form-select"
+                    value={form.departmentId}
+                    onChange={(e) => setForm({ ...form, departmentId: e.target.value })}
+                    required
+                  >
+                    <option value="">Выберите кафедру</option>
+                    {departments.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-md-2">
+                  <button 
+                    type="submit" 
+                    className={`btn w-100 ${form.id ? 'btn-warning' : 'btn-success'}`}
+                  >
+                    <i className={`fas ${form.id ? 'fa-sync' : 'fa-plus'} me-1`}></i>
+                    {form.id ? 'Обновить' : 'Добавить'}
+                  </button>
+                </div>
               </div>
-              
-              <div className="col-md-4">
-                <label className="form-label">Кафедра</label>
-                <select
-                  className="form-select"
-                  value={form.departmentId}
-                  onChange={(e) => setForm({ ...form, departmentId: e.target.value })}
-                  required
-                >
-                  <option value="">Выберите кафедру</option>
-                  {departments.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="col-md-2">
-                <button 
-                  type="submit" 
-                  className={`btn w-100 ${form.id ? 'btn-warning' : 'btn-success'}`}
-                >
-                  <i className={`fas ${form.id ? 'fa-sync' : 'fa-plus'} me-1`}></i>
-                  {form.id ? 'Обновить' : 'Добавить'}
-                </button>
-              </div>
-            </div>
-          </form>
+            </form>
+          )}
 
           {/* Поиск */}
           <div className="mb-3">
@@ -167,7 +178,7 @@ const DirectionPage = () => {
                     <th width="50">ID</th>
                     <th>Направление</th>
                     <th>Кафедра</th>
-                    <th width="120" className="text-end">Действия</th>
+                    {isAuthenticated && <th width="120" className="text-end">Действия</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -193,28 +204,30 @@ const DirectionPage = () => {
                               <span className="text-muted">Не указана</span>
                             )}
                           </td>
-                          <td className="text-end">
-                            <button 
-                              onClick={() => handleEdit(direction)}
-                              className="btn btn-sm btn-outline-primary me-2"
-                              title="Редактировать"
-                            >
-                              <i className="fas fa-edit"></i>
-                            </button>
-                            <button 
-                              onClick={() => handleDelete(direction.id)}
-                              className="btn btn-sm btn-outline-danger"
-                              title="Удалить"
-                            >
-                              <i className="fas fa-trash-alt"></i>
-                            </button>
-                          </td>
+                          {isAuthenticated && (
+                            <td className="text-end">
+                              <button 
+                                onClick={() => handleEdit(direction)}
+                                className="btn btn-sm btn-outline-primary me-2"
+                                title="Редактировать"
+                              >
+                                <i className="fas fa-edit"></i>
+                              </button>
+                              <button 
+                                onClick={() => handleDelete(direction.id)}
+                                className="btn btn-sm btn-outline-danger"
+                                title="Удалить"
+                              >
+                                <i className="fas fa-trash-alt"></i>
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       );
                     })
                   ) : (
                     <tr>
-                      <td colSpan="4" className="text-center py-4 text-muted">
+                      <td colSpan={isAuthenticated ? "4" : "3"} className="text-center py-4 text-muted">
                         {searchTerm ? 'Ничего не найдено' : 'Список направлений пуст'}
                       </td>
                     </tr>
@@ -224,7 +237,7 @@ const DirectionPage = () => {
             </div>
           )}
         </div>
-        
+
         <div className="card-footer bg-light">
           <div className="d-flex justify-content-between align-items-center">
             <small className="text-muted">
