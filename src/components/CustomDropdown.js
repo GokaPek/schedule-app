@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-//import './styles/CustomDropdown.css';
 
 const CustomDropdown = ({ items, selectedItem, onItemSelect, totalPages, currentPage, onPageChange }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,7 +10,7 @@ const CustomDropdown = ({ items, selectedItem, onItemSelect, totalPages, current
         className="dropdown-toggle"
         onClick={() => setIsOpen(!isOpen)}
       >
-        {selectedItem || '-- Выберите аудиторию --'}
+        {selectedItem ? selectedItem : '-- Выберите аудиторию --'}
       </button>
 
       {/* Выпадающий контент */}

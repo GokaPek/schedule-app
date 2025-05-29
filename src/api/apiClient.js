@@ -47,6 +47,7 @@ export async function checkAndStoreToken(rawToken) {
 export const getClassroomById = (id) => apiClient.get(`/classrooms/${id}`);
 export const createClassroom = (classroom) => apiClient.post('/classrooms', classroom);
 export const getAllClassrooms = (page = 0, size = 10) => apiClient.get('/classrooms', { params: { page, size } });
+export const deleteClassroom = (id) => apiClient.delete(`/classrooms/${id}`);
 
 // Функции для работы с Schedule
 export const createSchedule = (schedule) => apiClient.post('/schedules', schedule);
