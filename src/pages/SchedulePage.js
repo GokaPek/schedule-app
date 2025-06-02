@@ -25,6 +25,8 @@ const SchedulePage = () => {
     SUNDAY: 'Воскресенье',
   };
 
+  const daysOfWeek = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+
   const daysOfWeekRu = [
     { value: 'MONDAY', label: 'Понедельник' },
     { value: 'TUESDAY', label: 'Вторник' },
@@ -61,14 +63,27 @@ const SchedulePage = () => {
   const [selectedGroup, setSelectedGroup] = useState('');
   const [selectedTeacher, setSelectedTeacher] = useState('');
   const [activeTab, setActiveTab] = useState('group');
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const showError = (message) => {
+    setError(message);
+    setTimeout(() => setError(null), 5000);
+  };
+
+  const showSuccess = (message) => {
+    setSuccess(message);
+    setTimeout(() => setSuccess(null), 5000);
+  };
 
   const pairNumbers = Array.from({ length: 8 }, (_, i) => i + 1);
-  const daysOfWeek = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
   const weekNumbers = [1, 2];
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
         const groupsResponse = await getAllGroups();
         setGroups(groupsResponse.data);
         const teachersResponse = await getAllTeachers();
@@ -77,7 +92,9 @@ const SchedulePage = () => {
         setDisciplines(disciplinesResponse.data);
         fetchClassrooms(currentPage);
       } catch (error) {
-        console.error('Ошибка при загрузке данных:', error);
+        showError(`Ошибка при загрузке данных: ${error.message}`);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
@@ -107,16 +124,59 @@ const SchedulePage = () => {
     }
   };
 
+  // Генерация всех возможных слотов расписания
+  const generateAllScheduleSlots = () => {
+    const allSlots = [];
+    
+    daysOfWeek.forEach(day => {
+      weekNumbers.forEach(week => {
+        pairNumbers.forEach(pair => {
+          allSlots.push({
+            dayOfWeek: day,
+            weekNumber: week,
+            pairNumber: pair,
+            isEmpty: true // Флаг для пустого слота
+          });
+        });
+      });
+    });
+
+    return allSlots;
+  };
+
+  // Объединение фактического расписания с пустыми слотами
+  const combineScheduleWithEmptySlots = (actualSchedule) => {
+    const allSlots = generateAllScheduleSlots();
+    
+    // Помечаем заполненные слоты
+    actualSchedule.forEach(item => {
+      const slotIndex = allSlots.findIndex(slot => 
+        slot.dayOfWeek === item.dayOfWeek &&
+        slot.weekNumber === item.weekNumber &&
+        slot.pairNumber === item.pairNumber
+      );
+      
+      if (slotIndex !== -1) {
+        allSlots[slotIndex] = {
+          ...item,
+          isEmpty: false
+        };
+      }
+    });
+    
+    return allSlots;
+  };
+
   const handleCreateSchedule = async () => {
     if (!isAuthenticated) return;
 
     try {
       const selectedTeacherId = teachers.find((teacher) => teacher.lastName === schedule.teacherName)?.id;
-      const selectedDisciplineId = disciplines.find((discipline) => discipline.name === schedule.disciplineName)?.id;
-      const selectedClassroomId = classrooms.find((classroom) => classroom.name === schedule.classroomName)?.id;
+      const selectedDisciplineId = disciplines.find((d) => d.name === schedule.disciplineName)?.id;
+      const selectedClassroomId = classrooms.find((c) => c.name === schedule.classroomName)?.id;
 
       if (!schedule.groupIds.length || !selectedTeacherId || !selectedDisciplineId) {
-        alert('Выберите хотя бы одну группу, преподавателя и дисциплину.');
+        showError('Выберите хотя бы одну группу, преподавателя и дисциплину.');
         return;
       }
 
@@ -132,7 +192,7 @@ const SchedulePage = () => {
       };
 
       await createSchedule(newSchedule);
-      alert('Расписание успешно создано!');
+      showSuccess('Расписание успешно создано!');
       setSchedule({
         pairNumber: null,
         weekNumber: null,
@@ -143,8 +203,18 @@ const SchedulePage = () => {
         disciplineName: '',
         classroomName: '',
       });
+      const response = await getAllGroups(); // Обновляем список
+      setGroups(response.data);
+      if (selectedGroup) {
+        handleGetScheduleByGroupId();
+      } else if (selectedTeacher) {
+        handleGetScheduleByTeacherId();
+      }
     } catch (error) {
-      console.error('Ошибка при создании расписания:', error);
+      const message = error.response?.data?.message || error.message;
+      showError(`Ошибка при создании расписания: ${message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -153,11 +223,11 @@ const SchedulePage = () => {
 
     try {
       const selectedTeacherId = teachers.find((teacher) => teacher.lastName === schedule.teacherName)?.id;
-      const selectedDisciplineId = disciplines.find((discipline) => discipline.name === schedule.disciplineName)?.id;
-      const selectedClassroomId = classrooms.find((classroom) => classroom.name === schedule.classroomName)?.id;
+      const selectedDisciplineId = disciplines.find((d) => d.name === schedule.disciplineName)?.id;
+      const selectedClassroomId = classrooms.find((c) => c.name === schedule.classroomName)?.id;
 
       if (!schedule.groupIds.length || !selectedTeacherId || !selectedDisciplineId) {
-        alert('Выберите хотя бы одну группу, преподавателя и дисциплину.');
+        showError('Выберите хотя бы одну группу, преподавателя и дисциплину.');
         return;
       }
 
@@ -173,7 +243,7 @@ const SchedulePage = () => {
       };
 
       await updateSchedule(scheduleId, updatedSchedule);
-      alert('Расписание успешно обновлено!');
+      showSuccess('Расписание успешно обновлено!');
 
       if (selectedGroup) {
         handleGetScheduleByGroupId();
@@ -181,53 +251,62 @@ const SchedulePage = () => {
         handleGetScheduleByTeacherId();
       }
     } catch (error) {
-      console.error('Ошибка при обновлении расписания:', error);
+      const message = error.response?.data?.message || error.message;
+      showError(`Ошибка при обновлении расписания: ${message}`);
     }
   };
 
   const handleDeleteSchedule = async (id) => {
     if (!isAuthenticated) return;
 
-    if (window.confirm('Вы уверены, что хотите удалить это расписание?')) {
-      try {
-        await deleteSchedule(id);
-        alert('Расписание успешно удалено!');
-        if (selectedGroup) {
-          handleGetScheduleByGroupId();
-        } else if (selectedTeacher) {
-          handleGetScheduleByTeacherId();
-        }
-      } catch (error) {
-        console.error('Ошибка при удалении расписания:', error);
+    if (!window.confirm('Вы уверены, что хотите удалить это расписание?')) {
+      return;
+    }
+
+    try {
+      await deleteSchedule(id);
+      showSuccess('Расписание успешно удалено!');
+
+      if (selectedGroup) {
+        handleGetScheduleByGroupId();
+      } else if (selectedTeacher) {
+        handleGetScheduleByTeacherId();
       }
+    } catch (error) {
+      const message = error.response?.data?.message || error.message;
+      showError(`Ошибка при удалении расписания: ${message}`);
     }
   };
 
   const handleGetScheduleByGroupId = async () => {
     try {
-      const selectedGroupId = groups.find((group) => group.name === selectedGroup)?.id;
+      const selectedGroupId = groups.find((g) => g.name === selectedGroup)?.id;
       if (!selectedGroupId) {
-        alert('Выберите группу из списка.');
+        showError('Выберите группу из списка.');
         return;
       }
       const response = await getScheduleByGroupId(selectedGroupId);
-      setFetchedSchedule(sortSchedule(response.data));
+      const combinedSchedule = combineScheduleWithEmptySlots(response.data);
+      setFetchedSchedule(sortSchedule(combinedSchedule));
     } catch (error) {
-      console.error('Ошибка при получении расписания по группе:', error);
+      const message = error.response?.data?.message || error.message;
+      showError(`Ошибка при поиске по группе: ${message}`);
     }
   };
 
   const handleGetScheduleByTeacherId = async () => {
     try {
-      const selectedTeacherId = teachers.find((teacher) => teacher.lastName === selectedTeacher)?.id;
+      const selectedTeacherId = teachers.find((t) => t.lastName === selectedTeacher)?.id;
       if (!selectedTeacherId) {
-        alert('Выберите преподавателя из списка.');
+        showError('Выберите преподавателя из списка.');
         return;
       }
       const response = await getScheduleByTeacherId(selectedTeacherId);
-      setFetchedSchedule(sortSchedule(response.data));
+      const combinedSchedule = combineScheduleWithEmptySlots(response.data);
+      setFetchedSchedule(sortSchedule(combinedSchedule));
     } catch (error) {
-      console.error('Ошибка при получении расписания по преподавателю:', error);
+      const message = error.response?.data?.message || error.message;
+      showError(`Ошибка при поиске по преподавателю: ${message}`);
     }
   };
 
@@ -235,9 +314,9 @@ const SchedulePage = () => {
     if (!isAuthenticated) return;
 
     try {
-      const selectedGroupId = groups.find((group) => group.name === selectedGroup)?.id;
+      const selectedGroupId = groups.find((g) => g.name === selectedGroup)?.id;
       if (!selectedGroupId) {
-        alert('Выберите группу из списка.');
+        showError('Выберите группу из списка.');
         return;
       }
       const response = await downloadSchedulePdf(selectedGroupId);
@@ -249,7 +328,8 @@ const SchedulePage = () => {
       link.click();
       link.remove();
     } catch (error) {
-      console.error('Ошибка при скачивании PDF:', error);
+      const message = error.response?.data?.message || error.message;
+      showError(`Ошибка при скачивании PDF: ${message}`);
     }
   };
 
@@ -258,10 +338,10 @@ const SchedulePage = () => {
 
     try {
       await autoGenerate();
-      alert('Расписание успешно сгенерировано!');
+      showSuccess('Расписание успешно сгенерировано!');
     } catch (error) {
-      console.error('Ошибка при автогенерации расписания:', error);
-      alert('Произошла ошибка при генерации расписания');
+      const message = error.response?.data?.message || error.message;
+      showError(`Ошибка при автогенерации: ${message}`);
     }
   };
 
@@ -277,22 +357,50 @@ const SchedulePage = () => {
 
   return (
     <div className="container py-4">
+      {/* Уведомления */}
+      {error && (
+        <div className="alert alert-danger alert-dismissible fade show position-fixed top-0 end-0 m-3" role="alert">
+          <i className="fas fa-exclamation-circle me-2"></i>
+          {error}
+          <button type="button" className="btn-close" onClick={() => setError(null)}></button>
+        </div>
+      )}
+
+      {success && (
+        <div className="alert alert-success alert-dismissible fade show position-fixed top-0 end-0 m-3" role="alert">
+          <i className="fas fa-check-circle me-2"></i>
+          {success}
+          <button type="button" className="btn-close" onClick={() => setSuccess(null)}></button>
+        </div>
+      )}
+
+      {/* Индикатор загрузки */}
+      {loading && (
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
+          style={{ zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.1)' }}>
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Загрузка...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Заголовок страницы */}
       <div className="page-header mb-4">
         <h1 className="display-5 fw-bold">
-          <i className="fas fa-calendar-alt me-2"></i>
+          <i className="fas fa-calendar-alt me-2 text-primary"></i>
           Управление расписанием
         </h1>
-        <p className="lead">Создание и редактирование учебных аудиторий</p>
+        <p className="lead">Создание и редактирование учебных занятий</p>
       </div>
 
+      {/* Быстрые действия */}
       <div className="row">
-        {/* Быстрые действия */}
         {isAuthenticated && (
           <div className="col-md-4 mb-4">
-            <div className="card">
-              <div className="card-header d-flex justify-content-between align-items-center">
+            <div className="card shadow-sm">
+              <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <span>Быстрые действия</span>
-                <i className="fas fa-bolt"></i>
+                <i className="fas fa-bolt text-warning"></i>
               </div>
               <div className="card-body">
                 <button
@@ -305,7 +413,7 @@ const SchedulePage = () => {
                 <button
                   className="btn btn-primary w-100"
                   onClick={handleDownloadPdf}
-                  disabled={!selectedGroup}
+                  disabled={!selectedGroup || loading}
                 >
                   <i className="fas fa-file-pdf me-2"></i>
                   Скачать PDF
@@ -317,8 +425,8 @@ const SchedulePage = () => {
 
         {/* Поиск расписания */}
         <div className={`${isAuthenticated ? 'col-md-8' : 'col-12'}`}>
-          <div className="card">
-            <div className="card-header">
+          <div className="card shadow-sm">
+            <div className="card-header bg-primary text-white">
               <span>Поиск расписания</span>
             </div>
             <div className="card-body">
@@ -340,6 +448,8 @@ const SchedulePage = () => {
                   </button>
                 </li>
               </ul>
+
+              {/* Поиск по группе */}
               {activeTab === 'group' && (
                 <div>
                   <div className="mb-3">
@@ -360,13 +470,15 @@ const SchedulePage = () => {
                   <button
                     className="btn btn-primary w-100"
                     onClick={handleGetScheduleByGroupId}
-                    disabled={!selectedGroup}
+                    disabled={!selectedGroup || loading}
                   >
                     <i className="fas fa-search me-2"></i>
                     Найти расписание
                   </button>
                 </div>
               )}
+
+              {/* Поиск по преподавателю */}
               {activeTab === 'teacher' && (
                 <div>
                   <div className="mb-3">
@@ -387,7 +499,7 @@ const SchedulePage = () => {
                   <button
                     className="btn btn-primary w-100"
                     onClick={handleGetScheduleByTeacherId}
-                    disabled={!selectedTeacher}
+                    disabled={!selectedTeacher || loading}
                   >
                     <i className="fas fa-search me-2"></i>
                     Найти расписание
@@ -399,12 +511,12 @@ const SchedulePage = () => {
         </div>
       </div>
 
-      {/* Создание/редактирование расписания */}
+      {/* Форма создания/редактирования */}
       {isAuthenticated && (
         <div className="row mt-4">
           <div className="col-md-12">
-            <div className="card">
-              <div className="card-header">
+            <div className="card shadow-sm">
+              <div className="card-header bg-primary text-white">
                 <span>Создание/редактирование расписания</span>
               </div>
               <div className="card-body">
@@ -457,9 +569,14 @@ const SchedulePage = () => {
                   <div className="col-md-6">
                     <label className="form-label">Аудитория:</label>
                     <CustomDropdown
-                      items={classrooms}
+                      items={classrooms.map(c => ({ id: c.id, name: c.name, type: c.type }))}
                       selectedItem={schedule.classroomName}
-                      onItemSelect={(name) => setSchedule({ ...schedule, classroomName: name })}
+                      onItemSelect={(item) => setSchedule({
+                        ...schedule,
+                        classroomName: item.name,
+                        classroomId: item.id,
+                        classroomType: item.type
+                      })}
                       totalPages={totalPages}
                       currentPage={currentPage}
                       onPageChange={(direction) => {
@@ -522,7 +639,7 @@ const SchedulePage = () => {
                       ))}
                     </select>
                   </div>
-                  <div className="col-12 d-flex justify-content-between">
+                  <div className="col-12 d-flex justify-content-between mt-3">
                     <button
                       className="btn btn-primary"
                       onClick={handleCreateSchedule}
@@ -549,56 +666,90 @@ const SchedulePage = () => {
       {fetchedSchedule.length > 0 && (
         <div className="row mt-4">
           <div className="col-12">
-            <div className="card">
-              <div className="card-header d-flex justify-content-between align-items-center">
+            <div className="card shadow-sm">
+              <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <span>Результаты поиска</span>
-                <span className="badge bg-primary">{fetchedSchedule.length} записей</span>
+                <span className="badge bg-light text-primary">{fetchedSchedule.length} записей</span>
               </div>
               <div className="card-body">
-                <div className="list-group">
-                  {fetchedSchedule.map((item) => (
-                    <div key={item.id} className="list-group-item schedule-item">
-                      <div className="d-flex justify-content-between align-items-center">
-                        <div>
-                          <span className="badge bg-primary me-2">Пара {item.pairNumber}</span>
-                          <span className="badge bg-secondary me-2">{dayOfWeekLabels[item.dayOfWeek]}</span>
-                          <span className="badge bg-info me-2">Неделя {item.weekNumber}</span>
-                          <span className="badge bg-success me-2">{item.classroomName}</span>
-                          <span className="badge bg-primary me-2">{item.teacherName}</span>
-                          <strong>{item.disciplineName}</strong>
-                          <div className="mt-2">
-                            <small className="text-muted">Группы: {item.groupNames}</small>
-                          </div>
+                <div className="schedule-grid">
+                  {/* Группируем по дням недели */}
+                  {daysOfWeek.map(day => (
+                    <div key={day} className="mb-4">
+                      <h5 className="mb-3">{dayOfWeekLabels[day]}</h5>
+                      
+                      {/* Группируем по неделям */}
+                      {weekNumbers.map(week => (
+                        <div key={`${day}-${week}`} className="mb-3">
+                          <h6 className="text-muted">Неделя {week}</h6>
+                          
+                          {/* Выводим все пары для этого дня и недели */}
+                          {pairNumbers.map(pair => {
+                            const scheduleItem = fetchedSchedule.find(item => 
+                              item.dayOfWeek === day && 
+                              item.weekNumber === week && 
+                              item.pairNumber === pair
+                            );
+                            
+                            const isEmpty = !scheduleItem || scheduleItem.isEmpty;
+                            const classroom = scheduleItem && classrooms.find(c => c.name === scheduleItem.classroomName);
+                            const classroomType = classroom?.type || (scheduleItem?.classroomType || '');
+                            
+                            return (
+                              <div key={`${day}-${week}-${pair}`} className={`card mb-2 ${isEmpty ? 'bg-light' : ''}`}>
+                                <div className="card-body p-2">
+                                  <div className="d-flex justify-content-between align-items-center">
+                                    <div className="d-flex align-items-center">
+                                      <span className="badge bg-secondary me-2">Пара {pair}</span>
+                                      {isEmpty ? (
+                                        <span className="text-muted">Нет занятия</span>
+                                      ) : (
+                                        <>
+                                          <span className={`badge ${classroomType === 'LECTURE' ? 'bg-success' : 'bg-warning'} me-2`}>
+                                            {classroomType === 'LECTURE' ? 'Лекция' : 'Практика'}
+                                          </span>
+                                          <span className="badge bg-info me-2">{scheduleItem.classroomName}</span>
+                                          <strong className="me-2">{scheduleItem.disciplineName}</strong>
+                                          <span className="text-muted me-2">{scheduleItem.teacherName}</span>
+                                          <small className="text-muted">Группы: {scheduleItem.groupNames}</small>
+                                        </>
+                                      )}
+                                    </div>
+                                    {isAuthenticated && !isEmpty && (
+                                      <div>
+                                        <button
+                                          className="btn btn-sm btn-outline-primary me-2"
+                                          onClick={() => {
+                                            const classroomName = scheduleItem.classroomName || '';
+                                            setSchedule({
+                                              pairNumber: scheduleItem.pairNumber,
+                                              weekNumber: scheduleItem.weekNumber,
+                                              dayOfWeek: scheduleItem.dayOfWeek,
+                                              groupIds: scheduleItem.groupIds,
+                                              teacherName: teachers.find(t => t.id === scheduleItem.teacherId)?.lastName || '',
+                                              disciplineName: disciplines.find(d => d.id === scheduleItem.disciplineId)?.name || '',
+                                              classroomName: classroomName,
+                                            });
+                                            setScheduleId(scheduleItem.id);
+                                          }}
+                                        >
+                                          <i className="fas fa-edit"></i>
+                                        </button>
+                                        <button
+                                          className="btn btn-sm btn-danger"
+                                          onClick={() => handleDeleteSchedule(scheduleItem.id)}
+                                        >
+                                          <i className="fas fa-trash"></i>
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                        {isAuthenticated && (
-                          <>
-                            <button
-                              className="btn btn-sm btn-outline-primary me-2"
-                              onClick={() => {
-                                const classroomName = item.classroomName || '';
-                                setSchedule({
-                                  pairNumber: item.pairNumber,
-                                  weekNumber: item.weekNumber,
-                                  dayOfWeek: item.dayOfWeek,
-                                  groupIds: item.groupIds,
-                                  teacherName: teachers.find(t => t.id === item.teacherId)?.lastName || '',
-                                  disciplineName: disciplines.find(d => d.id === item.disciplineId)?.name || '',
-                                  classroomName: classroomName,
-                                });
-                                setScheduleId(item.id);
-                              }}
-                            >
-                              <i className="fas fa-edit"></i>
-                            </button>
-                            <button
-                              className="btn btn-sm btn-danger"
-                              onClick={() => handleDeleteSchedule(item.id)}
-                            >
-                              <i className="fas fa-trash"></i>
-                            </button>
-                          </>
-                        )}
-                      </div>
+                      ))}
                     </div>
                   ))}
                 </div>

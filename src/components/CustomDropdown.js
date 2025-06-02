@@ -1,11 +1,32 @@
 import React, { useState } from 'react';
 
-const CustomDropdown = ({ items, selectedItem, onItemSelect, totalPages, currentPage, onPageChange }) => {
+interface DropdownItem {
+  id: number;
+  name: string;
+  type?: string; // тип аудитории: "LECTURE", "LAB" и т.д.
+}
+
+interface CustomDropdownProps {
+  items: DropdownItem[];
+  selectedItem: string | null;
+  onItemSelect: (item: DropdownItem) => void;
+  totalPages: number;
+  currentPage: number;
+  onPageChange: (direction: 'prev' | 'next') => void;
+}
+
+const CustomDropdown: React.FC<CustomDropdownProps> = ({
+  items,
+  selectedItem,
+  onItemSelect,
+  totalPages,
+  currentPage,
+  onPageChange,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <div className="custom-dropdown">
-      {/* Кнопка для открытия/закрытия выпадающего списка */}
       <button
         className="dropdown-toggle"
         onClick={() => setIsOpen(!isOpen)}
@@ -13,40 +34,29 @@ const CustomDropdown = ({ items, selectedItem, onItemSelect, totalPages, current
         {selectedItem ? selectedItem : '-- Выберите аудиторию --'}
       </button>
 
-      {/* Выпадающий контент */}
       {isOpen && (
         <div className="dropdown-content">
-          {/* Список элементов */}
           <ul>
             {items.map((item) => (
               <li
                 key={item.id}
                 onClick={() => {
-                  onItemSelect(item.name);
+                  onItemSelect(item);
                   setIsOpen(false);
                 }}
               >
-                {item.name}
+                {item.name} — {item.type || 'Не указано'}
               </li>
             ))}
           </ul>
 
-          {/* Кнопки пагинации */}
           <div className="pagination-buttons">
-            <button
-              onClick={() => onPageChange('prev')}
-              disabled={currentPage === 0}
-            >
-              Предыдущая страница
+            <button onClick={() => onPageChange('prev')} disabled={currentPage === 0}>
+              Предыдущая
             </button>
-            <span>
-              Страница {currentPage + 1} из {totalPages}
-            </span>
-            <button
-              onClick={() => onPageChange('next')}
-              disabled={currentPage === totalPages - 1}
-            >
-              Следующая страница
+            <span>Страница {currentPage + 1} из {totalPages}</span>
+            <button onClick={() => onPageChange('next')} disabled={currentPage === totalPages - 1}>
+              Следующая
             </button>
           </div>
         </div>
